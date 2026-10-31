@@ -5,7 +5,7 @@ import { Button } from '@/components/Button';
 import { LogoMark } from '@/components/Logo';
 import { Screen } from '@/components/Screen';
 import { useWallet } from '@/context/WalletContext';
-import { takeLanguageReturnRoute, useT } from '@/i18n';
+import { useT } from '@/i18n';
 import { colors, fonts } from '@/theme';
 
 /** A — Bienvenue */
@@ -15,8 +15,8 @@ export default function Bienvenue() {
 
   // Lecture du stockage en cours : fond navy, sans contenu.
   if (profile === undefined) return <View style={styles.loading} />;
-  // Portefeuille déjà ouvert (ex. navigation reconstruite après un changement de langue) : pas de code à retaper.
-  if (profile && status === 'ready') return <Redirect href={takeLanguageReturnRoute() ?? '/accueil'} />;
+  // Portefeuille déjà ouvert : pas de code à retaper.
+  if (profile && status === 'ready') return <Redirect href="/accueil" />;
   // Un compte existe déjà sur ce téléphone : on va directement au déverrouillage.
   if (profile) return <Redirect href="/connexion" />;
 

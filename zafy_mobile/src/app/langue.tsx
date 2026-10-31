@@ -21,8 +21,10 @@ export default function Langue() {
           return (
             <Pressable
               key={l.code}
-              // Autre langue : la navigation est reconstruite et ramène au Profil (voir le layout racine)
-              onPress={() => (active ? router.back() : setLanguage(l.code))}
+              onPress={() => {
+                setLanguage(l.code);
+                router.back();
+              }}
               style={({ pressed }) => [styles.row, i < LANGUAGES.length - 1 && styles.divider, pressed && { opacity: 0.7 }]}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}>

@@ -40,20 +40,8 @@ i18next.use(initReactI18next).init({
   returnNull: false,
 });
 
-/**
- * Écran où revenir après un changement de langue : la navigation est reconstruite
- * (voir le layout racine), l'accueil y redirige une seule fois.
- */
-let returnRoute: '/profil' | null = null;
-export const takeLanguageReturnRoute = () => {
-  const route = returnRoute;
-  returnRoute = null;
-  return route;
-};
-
 export function setLanguage(language: Language) {
   if (language === i18next.language) return;
-  returnRoute = '/profil';
   i18next.changeLanguage(language);
   try {
     const f = file();

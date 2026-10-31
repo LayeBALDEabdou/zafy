@@ -10,10 +10,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LanguageScope } from '@/components/LanguageScope';
 import { useWallet, WalletProvider } from '@/context/WalletContext';
 import { onAutoPayments, runAutoPayments } from '@/lib/autopay';
 import { loadCurrency } from '@/lib/currency';
-import { useT } from '@/i18n';
 import { configureNotifications, NOTIFICATIONS_ENABLED } from '@/lib/notifications';
 import { getPlan } from '@/lib/plans';
 import { colors } from '@/theme';
@@ -66,7 +66,6 @@ function AutoPayRunner() {
 }
 
 export default function RootLayout() {
-  const { language } = useT();
   const [loaded, error] = useFonts({
     Sora_600SemiBold,
     Sora_700Bold,
@@ -86,10 +85,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <KeyboardProvider>
     <WalletProvider>
-    {/* Nouvelle langue : toute la navigation est reconstruite pour que chaque texte (même mis en cache
-        par le React Compiler) soit retraduit. Le portefeuille, au-dessus, reste ouvert. */}
     <Stack
-      key={language}
+      // Nouvelle langue : chaque écran est retraduit, la navigation reste en place (les onglets ont le leur)
+      screenLayout={({ route, children }) =>
+        route.name === '(tabs)' ? children : <LanguageScope>{children}</LanguageScope>
+      }
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
