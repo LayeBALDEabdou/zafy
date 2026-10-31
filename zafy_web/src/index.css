@@ -107,6 +107,46 @@ img {
   color: var(--turquoise-dark);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+/* Sélecteur de langue : drapeau + code, l'actif sur fond blanc */
+.languages {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #e3e9f2;
+}
+
+.language {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 13px 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.language img {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.language.active {
+  background: #fff;
+  color: var(--navy);
+}
+
 /* --- Boutons --- */
 .button {
   display: inline-flex;

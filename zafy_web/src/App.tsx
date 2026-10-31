@@ -5,6 +5,9 @@ import ecranAlertes from './assets/ecran-alertes.png'
 import ecranVerifier from './assets/ecran-verifier.png'
 import logoClair from './assets/logo-clair.svg'
 import walletImage from './assets/wallet.webp'
+import flagEn from './assets/flag-en.png'
+import flagFr from './assets/flag-fr.png'
+import { useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
 /**
@@ -71,46 +74,17 @@ function Icon({ name, size = 24 }: { name: keyof typeof ICONS; size?: number }) 
   )
 }
 
-const FEATURES: { icon: keyof typeof ICONS; title: string; text: string }[] = [
-  {
-    icon: 'key',
-    title: 'Tes clés, ton argent',
-    text: 'Les clés sont créées et gardées sur ton téléphone. Un vol de carte SIM ne donne accès à rien.',
-  },
-  {
-    icon: 'shield',
-    title: 'Vérifie un message',
-    text: 'Colle un SMS ou un message WhatsApp douteux : Zafy repère les signes d’arnaque avant que tu paies.',
-  },
-  {
-    icon: 'bell',
-    title: 'Alertes de la communauté',
-    text: 'Les numéros et adresses d’escrocs sont signalés sur Nostr. Zafy te prévient avant chaque envoi.',
-  },
-  {
-    icon: 'users',
-    title: 'Contacts reconnus',
-    text: 'Scanne la carte Zafy d’un proche : son nom s’affiche à chaque paiement, impossible de se tromper.',
-  },
-  {
-    icon: 'calendar',
-    title: 'Paiements planifiés',
-    text: 'Loyer, tontine, famille : programme tes paiements avec un rappel ou un envoi automatique.',
-  },
-  {
-    icon: 'coins',
-    title: 'En FCFA, euro ou dollar',
-    text: 'Vois et saisis les montants dans ta monnaie. En français ou en anglais.',
-  },
-]
+/** Icônes des fonctionnalités, dans l'ordre des textes du dictionnaire. */
+const FEATURE_ICONS: (keyof typeof ICONS)[] = ['key', 'shield', 'bell', 'users', 'calendar', 'coins']
 
-const STEPS = [
-  { title: 'Crée ton compte', text: 'Un prénom, un code à 4 chiffres. Note tes 12 mots de sauvegarde sur papier.' },
-  { title: 'Ajoute des sats', text: 'Reçois de l’argent d’un proche ou d’un client avec ton QR code.' },
-  { title: 'Paie en sécurité', text: 'Scanne, vérifie le nom et les alertes, confirme. C’est parti en quelques secondes.' },
+const LANGUAGES: { code: Language; label: string; flag: string }[] = [
+  { code: 'fr', label: 'Français', flag: flagFr },
+  { code: 'en', label: 'English', flag: flagEn },
 ]
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage()
+
   return (
     <>
       <header className="header">
@@ -119,11 +93,29 @@ export default function App() {
             <img src={logoClair} alt="" width={32} height={32} />
             <span>zafy</span>
           </a>
-          <nav className="nav" aria-label="Sections">
-            <a href="#fonctionnalites">Fonctionnalités</a>
-            <a href="#comment">Comment ça marche</a>
-            <a href="#telecharger">Télécharger</a>
-          </nav>
+          <div className="header-right">
+            <nav className="nav" aria-label="Sections">
+              <a href="#fonctionnalites">{t.nav.features}</a>
+              <a href="#comment">{t.nav.how}</a>
+              <a href="#telecharger">{t.nav.download}</a>
+            </nav>
+            <div className="languages" role="radiogroup" aria-label={t.languageLabel}>
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  role="radio"
+                  aria-checked={l.code === language}
+                  aria-label={l.label}
+                  title={l.label}
+                  className={l.code === language ? 'language active' : 'language'}
+                  onClick={() => setLanguage(l.code)}>
+                  <img src={l.flag} alt="" width={22} height={22} />
+                  <span>{l.code.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -133,21 +125,18 @@ export default function App() {
           <div className="hero-circle hero-circle-bottom" aria-hidden="true" />
           <div className="container hero-inner">
             <div className="hero-text">
-              <h1>Envoie de l’argent en quelques secondes, sans te faire arnaquer.</h1>
-              <p>
-                Zafy (Zap + Safe) protège ton argent contre les faux agents, les codes piégés et les vols de carte SIM.
-                Tes clés restent sur ton téléphone.
-              </p>
+              <h1>{t.hero.title}</h1>
+              <p>{t.hero.text}</p>
               <div className="hero-actions">
                 <a className="button button-primary" href={APK_URL}>
-                  <Icon name="download" size={20} /> Télécharger l’app
+                  <Icon name="download" size={20} /> {t.hero.download}
                 </a>
                 <a className="button button-outline" href="#comment">
-                  Comment ça marche
+                  {t.hero.how}
                 </a>
               </div>
             </div>
-            <Phone src={ecranAccueil} alt="Écran d’accueil de Zafy : solde, envoyer, recevoir, vérifier" />
+            <Phone src={ecranAccueil} alt={t.hero.phoneAlt} />
           </div>
         </section>
 
@@ -156,22 +145,18 @@ export default function App() {
             <img
               className="pocket-image"
               src={walletImage}
-              alt="Portefeuille, carte bancaire et pièces"
+              alt={t.pocket.imageAlt}
               width={450}
               height={431}
               loading="lazy"
             />
             <div className="pocket-text">
-              <h2>Ton argent t’appartient, vraiment.</h2>
-              <p>
-                Avec le mobile money, un vol de carte SIM ou un code donné à un faux agent suffit pour perdre ton argent.
-                Avec Zafy, il est protégé par une clé secrète qui ne quitte jamais ton téléphone : personne d’autre ne
-                peut y toucher.
-              </p>
+              <h2>{t.pocket.title}</h2>
+              <p>{t.pocket.text}</p>
               <ul className="checks">
-                <li>Personne ne peut bloquer ton argent</li>
-                <li>Voler ta carte SIM ne sert à rien</li>
-                <li>Téléphone perdu ? Tes 12 mots suffisent pour tout récupérer</li>
+                {t.pocket.checks.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
               </ul>
             </div>
           </div>
@@ -179,12 +164,12 @@ export default function App() {
 
         <section id="fonctionnalites" className="section section-features">
           <div className="container">
-            <SectionTitle eyebrow="Fonctionnalités" title="Tout pour payer l’esprit tranquille" />
+            <SectionTitle eyebrow={t.features.eyebrow} title={t.features.title} />
             <div className="features">
-              {FEATURES.map((f) => (
+              {t.features.items.map((f, i) => (
                 <article key={f.title} className="card feature">
                   <div className="feature-icon">
-                    <Icon name={f.icon} />
+                    <Icon name={FEATURE_ICONS[i]} />
                   </div>
                   <h3>{f.title}</h3>
                   <p>{f.text}</p>
@@ -196,9 +181,9 @@ export default function App() {
 
         <section id="comment" className="section section-white">
           <div className="container">
-            <SectionTitle eyebrow="Comment ça marche" title="Trois étapes, et c’est tout" />
+            <SectionTitle eyebrow={t.steps.eyebrow} title={t.steps.title} />
             <ol className="steps">
-              {STEPS.map((s, i) => (
+              {t.steps.items.map((s, i) => (
                 <li key={s.title} className="step">
                   <span className="step-number">{i + 1}</span>
                   <h3>{s.title}</h3>
@@ -207,9 +192,9 @@ export default function App() {
               ))}
             </ol>
             <div className="screens">
-              <Phone src={ecranVerifier} alt="Écran Vérifier : analyse d’un message suspect" />
-              <Phone src={ecranAccueil} alt="Écran d’accueil de Zafy" />
-              <Phone src={ecranAlertes} alt="Écran Alertes : arnaques signalées par la communauté" />
+              <Phone src={ecranVerifier} alt={t.steps.screensAlt[0]} />
+              <Phone src={ecranAccueil} alt={t.steps.screensAlt[1]} />
+              <Phone src={ecranAlertes} alt={t.steps.screensAlt[2]} />
             </div>
           </div>
         </section>
@@ -219,20 +204,17 @@ export default function App() {
             <div className="download">
               <div className="hero-circle hero-circle-top" aria-hidden="true" />
               <div className="download-text">
-                <h2>Essaie Zafy sur Android</h2>
-                <p>
-                  Version de test : elle fonctionne sur le réseau Bitcoin de test, sans argent réel. Bientôt sur le
-                  Play Store.
-                </p>
+                <h2>{t.download.title}</h2>
+                <p>{t.download.text}</p>
               </div>
               <div className="download-actions">
                 {/* Sur ordinateur : on scanne avec son téléphone. Sur téléphone, le bouton suffit. */}
                 <div className="qr">
-                  <QrCode value={APK_URL} size={168} />
-                  <span>Scanne pour télécharger</span>
+                  <QrCode value={APK_URL} size={168} label={t.download.qrLabel} />
+                  <span>{t.download.scan}</span>
                 </div>
                 <a className="button button-primary" href={APK_URL}>
-                  <Icon name="download" size={20} /> Télécharger l’APK
+                  <Icon name="download" size={20} /> {t.download.button}
                 </a>
               </div>
             </div>

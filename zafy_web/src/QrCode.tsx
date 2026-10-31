@@ -4,7 +4,7 @@ import qrcodeGenerator from 'qrcode-generator'
  * QR code en SVG, avec le logo Zafy au centre (même rendu que dans l'app mobile).
  * Correction d'erreur « H » (30 %) pour rester lisible malgré le logo.
  */
-export function QrCode({ value, size = 180 }: { value: string; size?: number }) {
+export function QrCode({ value, size = 180, label }: { value: string; size?: number; label: string }) {
   const qr = qrcodeGenerator(0, 'H')
   qr.addData(value)
   qr.make()
@@ -20,7 +20,7 @@ export function QrCode({ value, size = 180 }: { value: string; size?: number }) 
   const start = (n - logo) / 2
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${n} ${n}`} role="img" aria-label="QR code de téléchargement">
+    <svg width={size} height={size} viewBox={`0 0 ${n} ${n}`} role="img" aria-label={label}>
       <path fill="#13213A" d={d} />
       <rect x={start - 0.6} y={start - 0.6} width={logo + 1.2} height={logo + 1.2} rx={1.2} fill="#fff" />
       <rect x={start} y={start} width={logo} height={logo} rx={1} fill="#13213A" />
