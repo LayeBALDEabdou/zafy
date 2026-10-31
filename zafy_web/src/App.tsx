@@ -12,8 +12,11 @@ import { ContactPage } from './ContactPage'
 import { isContactPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
-/** Page du build EAS de l'app Android (bouton « Install » qui télécharge l'APK). Le QR code pointe aussi ici. */
-const APK_URL = 'https://expo.dev/accounts/twoylit/projects/zafy/builds/151eb78f-dcd7-4834-aea6-6fc686116dc8'
+/**
+ * Lien direct vers l'APK du build EAS « preview » (33702aca) : le téléchargement démarre dès le scan du QR code.
+ * À mettre à jour après chaque nouveau build preview (npx eas-cli@latest build:list).
+ */
+const APK_URL = 'https://expo.dev/artifacts/eas/22kWmvEVQArDhBXAB-Yr-7l97ML4BJuVrTjPgNOeahY.apk'
 
 // Tracés style Lucide (traits 2 px, arrondis), comme dans l'app mobile
 const ICONS = {
