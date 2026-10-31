@@ -12,11 +12,8 @@ import { ContactPage } from './ContactPage'
 import { isContactPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
-/**
- * Lien de téléchargement de l'APK (build EAS « preview »).
- * FICTIF pour l'instant (domaine réservé aux exemples) : à remplacer par le lien du build publié.
- */
-const APK_URL = 'https://example.com/zafy.apk'
+/** Page du build EAS de l'app Android (bouton « Install » qui télécharge l'APK). Le QR code pointe aussi ici. */
+const APK_URL = 'https://expo.dev/accounts/twoylit/projects/zafy/builds/151eb78f-dcd7-4834-aea6-6fc686116dc8'
 
 // Tracés style Lucide (traits 2 px, arrondis), comme dans l'app mobile
 const ICONS = {
