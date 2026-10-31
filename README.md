@@ -1,4 +1,9 @@
-# Zafy — Zap + Safe
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="zafy-maquette/logo/zafy-logo-horizontal-transparent-fond-sombre.png" />
+    <img src="zafy-maquette/logo/zafy-logo-horizontal-fond-clair.png" alt="Zafy" width="260" />
+  </picture>
+</p>
 
 **Un wallet Bitcoin Lightning self-custodial qui protège les Sénégalais contre les arnaques au mobile money.**
 
