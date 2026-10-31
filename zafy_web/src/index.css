@@ -424,41 +424,52 @@ img {
   margin-top: 56px;
 }
 
-/* --- Téléchargement --- */
+/* --- Téléchargement : bannière navy, robot Android en filigrane --- */
 .download {
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 48px;
+  gap: 32px;
+  padding: 48px 56px;
   border-radius: var(--radius-hero);
   background: var(--navy);
   color: #fff;
 }
 
+.download-bg {
+  position: absolute;
+  right: 26%;
+  bottom: -110px;
+  width: 340px;
+  opacity: 0.12;
+  transform: rotate(-14deg);
+}
+
 .download-text,
-.download .button {
+.download .qr {
   position: relative;
+}
+
+.download-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 520px;
 }
 
 .download h2 {
-  font-size: clamp(26px, 3.5vw, 34px);
+  font-size: clamp(26px, 3.5vw, 36px);
 }
 
 .download p {
-  margin-top: 10px;
-  max-width: 520px;
   color: var(--text-on-navy);
 }
 
-.download-actions {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+.download .button {
+  margin-top: 10px;
 }
 
 .qr {
@@ -466,19 +477,18 @@ img {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 16px 16px 12px;
+  padding: 14px 14px 10px;
   border-radius: var(--radius-card);
   background: #fff;
   color: var(--navy);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* --- Tablette et mobile --- */
 @media (max-width: 900px) {
   /* Rond plus petit dans le coin : il ne doit pas passer derrière le titre ni le bouton */
-  .hero .hero-circle-top,
-  .download .hero-circle-top {
+  .hero .hero-circle-top {
     width: 220px;
     height: 220px;
     right: -130px;
@@ -522,6 +532,16 @@ img {
     flex-direction: column;
     text-align: center;
   }
+
+  .download-text {
+    align-items: center;
+  }
+
+  .download-bg {
+    right: -60px;
+    bottom: -90px;
+    width: 260px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -532,10 +552,6 @@ img {
   /* On ne scanne pas l'écran de son propre téléphone : le bouton suffit */
   .qr {
     display: none;
-  }
-
-  .download-actions {
-    width: 100%;
   }
 
   .hero {
@@ -549,13 +565,6 @@ img {
 
   .download {
     padding: 36px 24px;
-  }
-
-  .download .hero-circle-top {
-    width: 150px;
-    height: 150px;
-    right: -95px;
-    top: -95px;
   }
 
   .button {

@@ -4,6 +4,7 @@ import ecranAccueil from './assets/ecran-accueil.png'
 import ecranAlertes from './assets/ecran-alertes.png'
 import ecranVerifier from './assets/ecran-verifier.png'
 import logoClair from './assets/logo-clair.svg'
+import androidIcon from './assets/android.png'
 import walletImage from './assets/wallet.webp'
 import flagEn from './assets/flag-en.png'
 import flagFr from './assets/flag-fr.png'
@@ -202,20 +203,19 @@ export default function App() {
         <section id="telecharger" className="section">
           <div className="container">
             <div className="download">
-              <div className="hero-circle hero-circle-top" aria-hidden="true" />
+              {/* Grand robot Android en filigrane */}
+              <img className="download-bg" src={androidIcon} alt="" width={400} height={400} />
               <div className="download-text">
                 <h2>{t.download.title}</h2>
                 <p>{t.download.text}</p>
-              </div>
-              <div className="download-actions">
-                {/* Sur ordinateur : on scanne avec son téléphone. Sur téléphone, le bouton suffit. */}
-                <div className="qr">
-                  <QrCode value={APK_URL} size={168} label={t.download.qrLabel} />
-                  <span>{t.download.scan}</span>
-                </div>
                 <a className="button button-primary" href={APK_URL}>
                   <Icon name="download" size={20} /> {t.download.button}
                 </a>
+              </div>
+              {/* Sur ordinateur : on scanne avec son téléphone. Sur téléphone, le bouton suffit. */}
+              <div className="qr">
+                <QrCode value={APK_URL} size={150} label={t.download.qrLabel} />
+                <span>{t.download.scan}</span>
               </div>
             </div>
           </div>
