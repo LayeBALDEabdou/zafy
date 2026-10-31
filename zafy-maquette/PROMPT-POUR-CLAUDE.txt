@@ -1,0 +1,15 @@
+Je développe Zafy, un wallet Bitcoin Lightning anti-arnaque pour le Sénégal, pour un hackathon (Bitcoin, Nostr, IA).
+
+Ce dossier contient la maquette complète :
+- DESIGN.md : couleurs, typographies, composants, liste des écrans, navigation et fonctionnement.
+- ecrans/ : une image de chaque écran.
+- sources/ : le HTML de chaque écran, qui sert de référence exacte pour les tailles et les couleurs.
+- logo/ : logos et icône de l'app.
+
+Crée l'app mobile en React Native avec Expo, TypeScript et expo-router, en reproduisant fidèlement les 15 écrans.
+Commence par :
+1. le thème, les composants réutilisables et la navigation ;
+2. tous les écrans avec des données factices.
+
+On branchera ensuite Breez SDK (Lightning), Nostr (signalements NIP-56) et l'IA de détection d'arnaques.
+Donne-moi les commandes à lancer et le code fichier par fichier.
