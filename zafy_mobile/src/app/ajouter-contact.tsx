@@ -10,7 +10,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { plural, useT } from '@/i18n';
 import { describeDestination } from '@/lib/breez';
-import { contactCardLink } from '@/lib/contactCard';
+import { contactCardPath } from '@/lib/contactCard';
 import { findContactByAddress, saveContact, type Contact } from '@/lib/contacts';
 import { formatTarget, normalizePhone, reportsAgainst, resolveTarget, type ReportSummary } from '@/lib/nostr';
 import { colors, fonts } from '@/theme';
@@ -52,7 +52,7 @@ export default function AjouterContact() {
   if (status === 'locked') {
     return (
       <Redirect
-        href={{ pathname: '/connexion', params: { next: contactCardLink({ name, phone, address }).replace('zafy://', '/') } }}
+        href={{ pathname: '/connexion', params: { next: contactCardPath({ name, phone, address }) } }}
       />
     );
   }

@@ -8,7 +8,8 @@ import androidIcon from './assets/android.png'
 import walletImage from './assets/wallet.webp'
 import flagEn from './assets/flag-en.png'
 import flagFr from './assets/flag-fr.png'
-import { useLanguage, type Language } from './i18n'
+import { ContactPage } from './ContactPage'
+import { isContactPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
 /**
@@ -85,40 +86,57 @@ const LANGUAGES: { code: Language; label: string; flag: string }[] = [
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage()
+  const contactPage = isContactPage()
 
-  return (
-    <>
-      <header className="header">
-        <div className="container header-inner">
-          <a href="#" className="brand" aria-label="Zafy, accueil">
-            <img src={logoClair} alt="" width={32} height={32} />
-            <span>zafy</span>
-          </a>
-          <div className="header-right">
+  const header = (
+    <header className="header">
+      <div className="container header-inner">
+        <a href="/" className="brand" aria-label="Zafy, accueil">
+          <img src={logoClair} alt="" width={32} height={32} />
+          <span>zafy</span>
+        </a>
+        <div className="header-right">
+          {contactPage ? null : (
             <nav className="nav" aria-label="Sections">
               <a href="#fonctionnalites">{t.nav.features}</a>
               <a href="#comment">{t.nav.how}</a>
               <a href="#telecharger">{t.nav.download}</a>
             </nav>
-            <div className="languages" role="radiogroup" aria-label={t.languageLabel}>
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  type="button"
-                  role="radio"
-                  aria-checked={l.code === language}
-                  aria-label={l.label}
-                  title={l.label}
-                  className={l.code === language ? 'language active' : 'language'}
-                  onClick={() => setLanguage(l.code)}>
-                  <img src={l.flag} alt="" width={22} height={22} />
-                  <span>{l.code.toUpperCase()}</span>
-                </button>
-              ))}
-            </div>
+          )}
+          <div className="languages" role="radiogroup" aria-label={t.languageLabel}>
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                role="radio"
+                aria-checked={l.code === language}
+                aria-label={l.label}
+                title={l.label}
+                className={l.code === language ? 'language active' : 'language'}
+                onClick={() => setLanguage(l.code)}>
+                <img src={l.flag} alt="" width={22} height={22} />
+                <span>{l.code.toUpperCase()}</span>
+              </button>
+            ))}
           </div>
         </div>
-      </header>
+      </div>
+    </header>
+  )
+
+  // Lien de carte de contact partagé : page dédiée, qui renvoie vers l'app
+  if (contactPage) {
+    return (
+      <>
+        {header}
+        <ContactPage t={t} apkUrl={APK_URL} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {header}
 
       <main>
         <section className="hero">

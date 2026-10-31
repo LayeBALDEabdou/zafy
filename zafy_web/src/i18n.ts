@@ -52,6 +52,16 @@ const fr = {
       'Écran Alertes : arnaques signalées par la communauté',
     ],
   },
+  contact: {
+    pageTitle: 'Ajouter un contact · Zafy',
+    title: 'te partage sa carte Zafy',
+    text: 'Ouvre-la dans l’app Zafy pour ajouter ce contact : son nom s’affichera à chaque paiement.',
+    open: 'Ouvrir dans Zafy',
+    noApp: 'Tu n’as pas encore Zafy ?',
+    getApp: 'Télécharger l’app',
+    invalid: 'Ce lien de carte Zafy est incomplet ou abîmé.',
+    home: 'Découvrir Zafy',
+  },
   download: {
     title: 'Essaie Zafy sur Android',
     text: 'Version de test : elle fonctionne sur le réseau Bitcoin de test, sans argent réel. Bientôt sur le Play Store.',
@@ -110,6 +120,16 @@ const en: Dictionary = {
       'Alerts screen: scams reported by the community',
     ],
   },
+  contact: {
+    pageTitle: 'Add a contact · Zafy',
+    title: 'is sharing their Zafy card with you',
+    text: 'Open it in the Zafy app to add this contact: their name will show up on every payment.',
+    open: 'Open in Zafy',
+    noApp: 'Don’t have Zafy yet?',
+    getApp: 'Download the app',
+    invalid: 'This Zafy card link is incomplete or damaged.',
+    home: 'Discover Zafy',
+  },
   download: {
     title: 'Try Zafy on Android',
     text: 'Test version: it runs on the Bitcoin test network, with no real money. Coming soon to the Play Store.',
@@ -120,6 +140,9 @@ const en: Dictionary = {
 }
 
 const DICTIONARIES: Record<Language, Dictionary> = { fr, en }
+
+/** Page « carte de contact » ouverte depuis un lien partagé (/ajouter-contact?n=…&a=…). */
+export const isContactPage = () => window.location.pathname.startsWith('/ajouter-contact')
 const STORAGE_KEY = 'zafy-langue'
 
 /** Langue enregistrée, sinon celle du navigateur (anglais si le navigateur est en anglais, français sinon). */
@@ -139,7 +162,7 @@ export function useLanguage() {
 
   useEffect(() => {
     document.documentElement.lang = language
-    document.title = DICTIONARIES[language].pageTitle
+    document.title = isContactPage() ? DICTIONARIES[language].contact.pageTitle : DICTIONARIES[language].pageTitle
     try {
       localStorage.setItem(STORAGE_KEY, language)
     } catch {
