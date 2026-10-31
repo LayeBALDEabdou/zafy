@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "app.zafy.wallet",
-      "sha256_cert_fingerprints": ["REMPLACER_PAR_L_EMPREINTE_SHA256_DU_BUILD_EAS"]
+      "sha256_cert_fingerprints": ["95:E7:AF:4F:01:D7:1D:11:7C:78:8D:B6:38:AB:BE:DD:FC:83:E2:D1:BB:65:0F:AE:7D:86:23:E2:0F:A1:8C:97"]
     }
   }
 ]
