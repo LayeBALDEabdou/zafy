@@ -59,9 +59,12 @@ export default function Profil() {
     await lock();
   };
 
+  // Adresse affichée en haut : l'adresse Zafy (a.balde.776511631@zafy), sinon l'adresse Spark
+  const shownAddress = profile && discoverable ? zafyAddress(profile.name, profile.phone) : address;
+
   const copyAddress = async () => {
-    if (!address) return;
-    await Clipboard.setStringAsync(address);
+    if (!shownAddress) return;
+    await Clipboard.setStringAsync(shownAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -86,8 +89,8 @@ export default function Profil() {
             {fullName}
           </Text>
           {/* Marge à droite : le bouton « Copier » est posé sur le bord bas de la carte */}
-          <Text style={styles.address} numberOfLines={1}>
-            {address ? shorten(address) : '…'}
+          <Text style={styles.address} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+            {shownAddress === address ? (address ? shorten(address) : '…') : shownAddress}
           </Text>
         </View>
       </WalletCard>
@@ -154,7 +157,7 @@ export default function Profil() {
                   ? t('profile.zafyAddressRetry')
                   : directory === 'syncing'
                     ? t('profile.zafyAddressSyncing')
-                    : zafyAddress(profile.phone)}
+                    : t('profile.zafyAddressOn')}
             </Value>
           }
         />

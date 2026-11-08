@@ -3,9 +3,10 @@ import { File, Paths } from 'expo-file-system';
 import type { Event } from 'nostr-tools/pure';
 
 import type { Profile } from '@/lib/account';
-import { checkWalletSignature, describeDestination, getSparkAddress, signWithWallet } from '@/lib/breez';
+import { t } from '@/i18n';
+import { checkWalletSignature, describeDestination, getIdentity, getSparkAddress, signWithWallet } from '@/lib/breez';
 import { normalizePhone } from '@/lib/phone';
-import { myPubkey, publish, query } from '@/lib/relays';
+import { myPubkey, publish, query, RelayError } from '@/lib/relays';
 
 /**
  * Annuaire public Zafy sur Nostr : « tel numéro → tel portefeuille ».
@@ -115,8 +116,9 @@ async function rememberPublished(fingerprint: string) {
 export async function syncPublicProfile(profile: Profile) {
   const discoverable = profile.discoverable !== false;
   const pubkey = await myPubkey();
+  // « relais-2 » : à changer quand la liste des relais change, pour republier le profil partout
   const fingerprint = JSON.stringify(
-    discoverable ? [pubkey, profile.name, profile.phone] : [pubkey, 'hidden'],
+    discoverable ? ['relais-2', pubkey, profile.name, profile.phone] : ['relais-2', pubkey, 'hidden'],
   );
   const last = await lastPublished();
   if (last?.fingerprint === fingerprint && (!discoverable || Date.now() - last.at < REFRESH_MS)) return;
@@ -212,4 +214,20 @@ export const profilesOfIdentity = async (identity: string) =>
 export async function profilesOfAuthors(pubkeys: string[]) {
   if (pubkeys.length === 0) return [];
   return findProfiles({ authors: pubkeys.slice(0, 200) });
+}
+
+/**
+ * Un numéro = un compte. Vérifie, portefeuille ouvert, que ce numéro (« +221776511631 »)
+ * n'appartient pas déjà à un autre portefeuille Zafy. Le sien (restauration, autre téléphone) est accepté.
+ * Lève une erreur lisible si le numéro est pris ou si on ne peut pas le vérifier (pas de connexion).
+ */
+export async function ensurePhoneAvailable(phone: string) {
+  const [mine, found] = await Promise.all([
+    getIdentity(),
+    lookupPhone(phone).catch((e) => {
+      throw e instanceof RelayError ? new Error(t('errors.phoneUncheckable')) : e;
+    }),
+  ]);
+  const owners = found.status === 'found' ? [found.profile] : found.status === 'contested' ? found.profiles : [];
+  if (owners.some((p) => p.identity !== mine)) throw new Error(t('errors.phoneTaken'));
 }

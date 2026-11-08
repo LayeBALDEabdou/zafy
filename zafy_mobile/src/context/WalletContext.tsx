@@ -12,9 +12,10 @@ import {
   receivedPayment,
 } from '@/lib/breez';
 import { formatMoney } from '@/lib/currency';
-import { syncPublicProfile } from '@/lib/directory';
+import { ensurePhoneAvailable, syncPublicProfile } from '@/lib/directory';
 import { hideTransaction as hideTransactionOnDevice, loadHiddenTransactions } from '@/lib/hiddenTransactions';
 import { ensureNotificationPermission, notifyNow } from '@/lib/notifications';
+import { normalizePhone } from '@/lib/phone';
 import { forgetNostrKey } from '@/lib/relays';
 
 type Status = 'locked' | 'connecting' | 'ready' | 'error';
@@ -128,16 +129,33 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [refresh, syncDirectory],
   );
 
+  /**
+   * Un numéro = un compte : ouvre le portefeuille de ces 12 mots juste le temps de vérifier
+   * que le numéro n'est pas déjà celui d'un autre compte Zafy. Rien n'est enregistré si c'est le cas.
+   */
+  const checkPhone = useCallback(async (mnemonic: string, phone: string) => {
+    setStatus('connecting');
+    await connectWallet(mnemonic);
+    try {
+      await ensurePhoneAvailable(normalizePhone(phone));
+    } catch (e) {
+      await disconnectWallet();
+      setStatus('locked');
+      throw e;
+    }
+  }, []);
+
   const signUp = useCallback(
     async (newProfile: Profile, pin: string) => {
       const mnemonic = generateMnemonic();
+      await checkPhone(mnemonic, newProfile.phone);
       await createAccount(newProfile, pin, mnemonic);
       forgetNostrKey();
       profileRef.current = newProfile;
       setProfile(newProfile);
       await open(mnemonic);
     },
-    [open],
+    [open, checkPhone],
   );
 
   const restore = useCallback(
@@ -146,13 +164,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       unsubscribe.current?.();
       unsubscribe.current = null;
       await disconnectWallet();
+      // Son propre numéro est accepté (même portefeuille) ; celui d'un autre compte est refusé
+      await checkPhone(mnemonic, newProfile.phone);
       await createAccount(newProfile, pin, mnemonic);
       forgetNostrKey();
       profileRef.current = newProfile;
       setProfile(newProfile);
       await open(mnemonic);
     },
-    [open],
+    [open, checkPhone],
   );
 
   const unlock = useCallback(async () => {
@@ -174,6 +194,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     async (next: Profile) => {
+      // Nouveau numéro : il ne doit pas déjà appartenir à un autre compte Zafy
+      if (next.phone !== profileRef.current?.phone) await ensurePhoneAvailable(normalizePhone(next.phone));
       await saveProfile(next);
       profileRef.current = next;
       setProfile(next);

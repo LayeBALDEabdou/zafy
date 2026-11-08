@@ -63,7 +63,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
             <Text style={styles.toggleTitle}>{t('profile.discoverable')}</Text>
             <Text style={styles.noteText}>
               {discoverable
-                ? t('profile.discoverableOn', { address: zafyAddress(isValidPhone(phone) ? phone : '77xxxxxxx') })
+                ? t('profile.discoverableOn', { address: zafyAddress(name, isValidPhone(phone) ? phone : '77xxxxxxx') })
                 : t('profile.discoverableOff')}
             </Text>
           </View>

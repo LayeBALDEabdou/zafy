@@ -198,6 +198,8 @@ export const fr = {
     bioCancel: "Utiliser mon code",
     bioGeneric: "Échec de la vérification. Réessaie.",
     relayOffline: "Impossible de joindre les relais Nostr. Vérifie ta connexion.",
+    phoneTaken: "Ce numéro est déjà utilisé par un autre compte Zafy.",
+    phoneUncheckable: "Impossible de vérifier que ce numéro est libre. Vérifie ta connexion et réessaie.",
   },
   history: {
     title: "Transactions",
@@ -349,6 +351,7 @@ export const fr = {
     zafyAddressHidden: "Désactivée",
     zafyAddressRetry: "Non publiée · Réessayer",
     zafyAddressSyncing: "Publication…",
+    zafyAddressOn: "Activée",
   },
   receive: {
     title: "Recevoir",
@@ -452,6 +455,7 @@ export const fr = {
     confirmReported: "⚠️ Signalé par {{n}} personnes comme arnaqueur.",
     confirmReportedOne: "⚠️ Signalé par {{n}} personne comme arnaqueur.",
     confirmUnchecked: "⚠️ Les signalements n’ont pas pu être vérifiés (pas de connexion aux relais).",
+    zafyMismatch: "Le nom de cette adresse ne correspond pas au compte de ce numéro.",
   },
   tabs: {
     home: "Accueil",

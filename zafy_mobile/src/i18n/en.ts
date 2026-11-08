@@ -200,6 +200,8 @@ export const en: Dictionary = {
     bioCancel: "Use my code",
     bioGeneric: "Verification failed. Try again.",
     relayOffline: "Can’t reach the Nostr relays. Check your connection.",
+    phoneTaken: "This number is already used by another Zafy account.",
+    phoneUncheckable: "Can’t check that this number is free. Check your connection and try again.",
   },
   history: {
     title: "Transactions",
@@ -351,6 +353,7 @@ export const en: Dictionary = {
     zafyAddressHidden: "Off",
     zafyAddressRetry: "Not published · Retry",
     zafyAddressSyncing: "Publishing…",
+    zafyAddressOn: "On",
   },
   receive: {
     title: "Receive",
@@ -454,6 +457,7 @@ export const en: Dictionary = {
     confirmReported: "⚠️ Reported as a scammer by {{n}} people.",
     confirmReportedOne: "⚠️ Reported as a scammer by {{n}} person.",
     confirmUnchecked: "⚠️ Reports could not be checked (no connection to the relays).",
+    zafyMismatch: "The name in this address doesn’t match the account for this number.",
   },
   tabs: {
     home: "Home",

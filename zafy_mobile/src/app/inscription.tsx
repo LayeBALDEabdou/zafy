@@ -28,7 +28,7 @@ export default function Inscription() {
   const [error, setError] = useState<string | null>(null);
   const pinRef = useRef<TextInputInstance>(null);
 
-  const address = zafyAddress(phone || '77xxxxxxx');
+  const address = zafyAddress(name || 'Prénom Nom', phone || '77xxxxxxx');
   const canSubmit = isFullName(name) && isValidPhone(phone) && pin.length === 4;
 
   const submit = async () => {

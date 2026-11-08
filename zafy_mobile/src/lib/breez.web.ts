@@ -27,6 +27,7 @@ export const createInvoice = (_amountSats: number, _description?: string): Promi
 export const signWithWallet = (_message: string): Promise<{ identity: string; signature: string }> => unavailable();
 export const checkWalletSignature = (_message: string, _identity: string, _signature: string): Promise<boolean> =>
   unavailable();
+export const getIdentity = (): Promise<string> => unavailable();
 export const getSparkAddress = (): Promise<string> => unavailable();
 export const getBitcoinAddress = (): Promise<string> => unavailable();
 export const prepareSend = (_destination: string, _amountSats: number): Promise<PreparedPayment> => unavailable();

@@ -35,7 +35,7 @@ export default function Recevoir() {
   const sats = inputToSats(amount);
   const fullName = profile?.name;
   // Adresse Zafy : affichée seulement si l'utilisateur est trouvable par son numéro
-  const address = profile && profile.discoverable !== false ? zafyAddress(profile.phone) : null;
+  const address = profile && profile.discoverable !== false ? zafyAddress(profile.name, profile.phone) : null;
 
   useEffect(() => {
     let cancelled = false;

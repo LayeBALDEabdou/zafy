@@ -23,7 +23,7 @@ import { formatInput as formatAmountInput, getCurrencyState, inputFromSats as sa
 import { lookupPhone, type PhoneLookup } from '@/lib/directory';
 import { formatTarget, reportsFor, resolveTarget } from '@/lib/nostr';
 import { parseShortPayment, readAmount, type ShortPayment } from '@/lib/paymentLink';
-import { parseZafyAddress } from '@/lib/phone';
+import { parseZafyAddress, zafyHandle } from '@/lib/phone';
 import { cleanDestination, onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
 
@@ -38,6 +38,7 @@ const KIND_LABEL = {
 /** Pourquoi un numéro ne peut pas être payé. */
 const ALIAS_ERROR = {
   none: 'send.zafyNone',
+  mismatch: 'send.zafyMismatch',
   contested: 'send.zafyContested',
   error: 'send.zafyError',
 } as const;
@@ -61,6 +62,8 @@ type ReportsState =
 
 /** Adresse Zafy (« 771234567@zafy ») recherchée dans l'annuaire. */
 type AliasState = { phone: string } & (PhoneLookup | { status: 'error' });
+/** Résultat affiché : `mismatch` = le nom écrit dans l'adresse n'est pas celui du compte de ce numéro. */
+type AliasStatus = Exclude<AliasState['status'], 'found'> | 'mismatch';
 
 /** 02 — Envoyer : facture Lightning, adresse Spark ou adresse Bitcoin. */
 export default function Envoyer() {
@@ -86,9 +89,18 @@ export default function Envoyer() {
   const { contacts, find } = useContacts();
   const input = to.trim();
   // Numéro ou « 771234567@zafy » : on paie l'adresse Spark publiée dans l'annuaire Zafy
-  const aliasPhone = parseZafyAddress(input);
+  const typed = parseZafyAddress(input);
+  const aliasPhone = typed?.phone ?? null;
   const aliasResult = aliasPhone && alias?.phone === aliasPhone ? alias : null;
-  const zafyProfile = aliasResult?.status === 'found' ? aliasResult.profile : null;
+  const found = aliasResult?.status === 'found' ? aliasResult.profile : null;
+  // « a.balde.776511631@zafy » : le nom écrit doit être celui du compte (faute de frappe ou imposteur sinon)
+  const mismatch = !!found && !!typed?.handle && zafyHandle(found.name) !== typed.handle;
+  const zafyProfile = mismatch ? null : found;
+  const aliasError: AliasStatus | null = mismatch
+    ? 'mismatch'
+    : aliasResult && aliasResult.status !== 'found'
+      ? aliasResult.status
+      : null;
   /** Ce qui est réellement payé : l'adresse trouvée pour un numéro, sinon ce qui a été saisi. */
   const payTo = aliasPhone ? (zafyProfile?.address ?? '') : input;
   const current = dest?.input === payTo ? dest : null;
@@ -187,8 +199,8 @@ export default function Envoyer() {
   const send = async () => {
     setError(null);
     if (reading) return;
-    if (aliasResult && aliasResult.status !== 'found') {
-      return setError(t(ALIAS_ERROR[aliasResult.status]));
+    if (aliasError) {
+      return setError(t(ALIAS_ERROR[aliasError]));
     }
     if (!current || current.kind === 'other') {
       return setError(t('send.pasteSomething'));
@@ -303,10 +315,10 @@ export default function Envoyer() {
                 tone="warning"
                 icon={<Icon name="user" size={14} color={colors.warningText} strokeWidth={2.6} />}
               />
-            ) : aliasResult ? (
+            ) : aliasError ? (
               <Badge
-                label={t(ALIAS_ERROR[aliasResult.status as keyof typeof ALIAS_ERROR])}
-                tone={aliasResult.status === 'contested' ? 'danger' : 'warning'}
+                label={t(ALIAS_ERROR[aliasError])}
+                tone={aliasError === 'contested' || aliasError === 'mismatch' ? 'danger' : 'warning'}
                 icon={<Icon name="alert" size={14} color={colors.warningText} strokeWidth={2.6} />}
               />
             ) : null

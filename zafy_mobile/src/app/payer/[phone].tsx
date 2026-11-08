@@ -4,7 +4,6 @@ import { ActivityIndicator, StyleSheet } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useWallet } from '@/context/WalletContext';
 import { readAmount, shortPaymentPath } from '@/lib/paymentLink';
-import { zafyAddress } from '@/lib/phone';
 import { colors } from '@/theme';
 
 /**
@@ -27,7 +26,8 @@ export default function PayerNumero() {
         href={{
           pathname: '/envoyer',
           params: {
-            to: zafyAddress(phone),
+            // Le numéro seul : Envoyer cherche le compte Zafy dans l'annuaire
+            to: phone,
             ...(amount.amount ? { m: String(amount.amount), c: amount.currency } : {}),
           },
         }}

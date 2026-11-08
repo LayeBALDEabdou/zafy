@@ -73,6 +73,12 @@ function requireSdk() {
   return sdk;
 }
 
+/** Identité Spark du portefeuille ouvert (clé publique, hexadécimal). */
+export async function getIdentity() {
+  const info = await requireSdk().getInfo(GetInfoRequest.create({ ensureSynced: false }));
+  return info.identityPubkey;
+}
+
 export async function getBalanceSats() {
   const info = await requireSdk().getInfo(GetInfoRequest.create({ ensureSynced: false }));
   return Number(info.balanceSats);
