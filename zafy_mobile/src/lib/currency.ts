@@ -3,15 +3,20 @@ import { File, Paths } from 'expo-file-system';
 import { formatNumber } from '@/data/mock';
 import { fetchBtcPrices } from '@/lib/breez';
 
-/** Devise d'affichage. Les montants restent en sats partout (saisie, envois) : seule la présentation change. */
+/**
+ * Devise d'affichage. Les montants restent en sats partout (saisie, envois) : seule la présentation change.
+ * `SAT` sert seulement à l'affichage secondaire (« soit N sats ») : l'utilisateur ne peut pas le choisir.
+ */
 export type Currency = 'XOF' | 'USD' | 'EUR' | 'SAT';
 
+/** Devises proposées à l'utilisateur. */
 export const CURRENCIES: { code: Currency; label: string; symbol: string }[] = [
   { code: 'XOF', label: 'Franc CFA', symbol: 'FCFA' },
   { code: 'EUR', label: 'Euro', symbol: '€' },
   { code: 'USD', label: 'Dollar', symbol: '$' },
-  { code: 'SAT', label: 'Satoshi', symbol: 'sats' },
 ];
+
+const isChoosable = (currency: unknown): currency is Currency => CURRENCIES.some((c) => c.code === currency);
 
 /** Prix d'un bitcoin dans chaque devise. */
 type Prices = Record<Exclude<Currency, 'SAT'>, number>;
@@ -52,13 +57,19 @@ export function subscribeCurrency(fn: () => void) {
   };
 }
 
-export const setCurrency = (currency: Currency) => update({ currency });
+export const setCurrency = (currency: Currency) => {
+  if (isChoosable(currency)) update({ currency });
+};
 
 /** Relit la devise choisie et les derniers taux connus. */
 export async function loadCurrency() {
   try {
     const f = file();
-    if (f.exists) state = { ...state, ...(JSON.parse(await f.text()) as Partial<State>) };
+    if (f.exists) {
+      const saved = JSON.parse(await f.text()) as Partial<State>;
+      // Ancien choix « Satoshi » (plus proposé) : retour au franc CFA
+      state = { ...state, ...saved, currency: isChoosable(saved.currency) ? saved.currency : 'XOF' };
+    }
     listeners.forEach((fn) => fn());
   } catch {
     // Fichier absent ou illisible : valeurs par défaut
