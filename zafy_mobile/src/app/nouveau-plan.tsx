@@ -1,3 +1,5 @@
+'use no memo'; // Dates et libellés traduits hors composant : recalculés à chaque rendu (changement de langue)
+
 import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';

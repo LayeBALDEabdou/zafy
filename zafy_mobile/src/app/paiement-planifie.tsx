@@ -1,3 +1,5 @@
+'use no memo'; // Dates et libellés traduits hors composant : recalculés à chaque rendu (changement de langue)
+
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';

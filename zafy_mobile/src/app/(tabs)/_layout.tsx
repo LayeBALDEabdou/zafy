@@ -1,7 +1,6 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
-import { LanguageScope } from '@/components/LanguageScope';
 import { TabBar } from '@/components/TabBar';
 import { useWallet } from '@/context/WalletContext';
 import { colors } from '@/theme';
@@ -15,7 +14,6 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
-      screenLayout={({ children }) => <LanguageScope>{children}</LanguageScope>}
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },

@@ -1,3 +1,5 @@
+'use no memo'; // Dates et libellés traduits hors composant : recalculés à chaque rendu (changement de langue)
+
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';

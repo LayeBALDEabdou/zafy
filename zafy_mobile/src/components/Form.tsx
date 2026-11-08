@@ -11,7 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import { colors, fonts, radius } from '@/theme';
 
 export function Label({ children, hint }: { children: string; hint?: string }) {
@@ -49,6 +49,7 @@ export function RecipientInput({
   onChangeText: (v: string) => void;
   right?: ReactNode;
 }) {
+  const { t } = useT();
   const initial = value.trim().charAt(0).toUpperCase() || '?';
   return (
     <View style={[styles.recipient, right ? { paddingRight: 8 } : null]}>

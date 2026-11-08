@@ -2,7 +2,7 @@ import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import { colors, fonts } from '@/theme';
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export function ScreenHeader({ title, backTo }: Props) {
+  const { t } = useT();
   const goBack = () => {
     // navigate change d'onglet ; dismissTo ne fonctionne que dans une pile d'écrans
     if (backTo) router.navigate(backTo);

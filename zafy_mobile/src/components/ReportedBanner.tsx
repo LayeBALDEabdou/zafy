@@ -3,12 +3,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { useOwnReports } from '@/hooks/useOwnReports';
-import { plural, t } from '@/i18n';
+import { plural, useT } from '@/i18n';
 import { isPhoneTarget } from '@/lib/nostr';
 import { colors, fonts } from '@/theme';
 
 /** Prévient l'utilisateur que son numéro ou son adresse a été signalé sur Nostr. Rien si aucun signalement. */
 export function ReportedBanner() {
+  const { t } = useT();
   const { summaries } = useOwnReports();
   if (summaries.length === 0) return null;
 

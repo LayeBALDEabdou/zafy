@@ -1,7 +1,7 @@
 import { useRef, type Ref } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import { colors } from '@/theme';
 
 type Props = {
@@ -14,6 +14,7 @@ type Props = {
 
 /** Code secret en 4 cases ; un champ invisible reçoit la saisie du clavier numérique. */
 export function PinInput({ value, onChange, ref, length = 4 }: Props) {
+  const { t } = useT();
   const localRef = useRef<TextInputInstance>(null);
 
   const setRefs = (node: TextInputInstance | null) => {

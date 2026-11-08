@@ -10,7 +10,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { LanguageScope } from '@/components/LanguageScope';
 import { useWallet, WalletProvider } from '@/context/WalletContext';
 import { onAutoPayments, runAutoPayments } from '@/lib/autopay';
 import { loadCurrency } from '@/lib/currency';
@@ -86,10 +85,6 @@ export default function RootLayout() {
     <KeyboardProvider>
     <WalletProvider>
     <Stack
-      // Nouvelle langue : chaque écran est retraduit, la navigation reste en place (les onglets ont le leur)
-      screenLayout={({ route, children }) =>
-        route.name === '(tabs)' ? children : <LanguageScope>{children}</LanguageScope>
-      }
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },

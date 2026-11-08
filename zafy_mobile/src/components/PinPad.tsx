@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import { colors, fonts } from '@/theme';
 
 type Props = {
@@ -17,6 +17,7 @@ type Props = {
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'bio', '0', 'del'] as const;
 
 export function PinPad({ onDigit, onDelete, onBiometric, biometricDisabled, keyHeight = 64 }: Props) {
+  const { t } = useT();
   const gap = keyHeight < 64 ? 10 : 12;
   return (
     <View style={[styles.grid, { gap }]}>
@@ -73,6 +74,7 @@ function Key({
 
 /** Indicateur de saisie : 4 points (Connexion). */
 export function PinDots({ length, filled }: { length: number; filled: number }) {
+  const { t } = useT();
   return (
     <View style={styles.dots} accessibilityLabel={t('a11y.pinProgress', { filled, length })}>
       {Array.from({ length }, (_, i) => (

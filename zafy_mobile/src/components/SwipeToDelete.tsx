@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import { Icon } from '@/components/Icon';
-import { t } from '@/i18n';
+import { useT } from '@/i18n';
 import { confirmAction } from '@/lib/confirm';
 import { colors, fonts } from '@/theme';
 
@@ -22,6 +22,7 @@ export function SwipeToDelete({
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
+  const { t } = useT();
   const swipeable = useRef<SwipeableMethods>(null);
 
   const confirmDelete = async () => {
