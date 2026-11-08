@@ -185,7 +185,8 @@ export async function retractReport(target: string) {
   if (ids.length === 0) return;
   await publish({
     kind: DELETION_KIND,
-    tags: [...ids.map((id) => ['e', id]), ['k', String(REPORT_KIND)]],
+    // `i` et `t` comme le signalement : la demande de suppression arrive dans la même requête que lui
+    tags: [...ids.map((id) => ['e', id]), ['k', String(REPORT_KIND)], ['i', target], ['t', APP_TAG]],
     content: '',
   });
 }
@@ -210,18 +211,26 @@ function toReport(event: Event): Report | null {
   };
 }
 
-/** Signalements correspondant au filtre, sans ceux que leur auteur a retirés. Lève `RelayError` sans connexion. */
+/**
+ * Signalements correspondant au filtre, sans ceux que leur auteur a retirés. Lève `RelayError` sans connexion.
+ * Une seule requête : les demandes de suppression portent les mêmes étiquettes que les signalements.
+ */
 async function fetchReports(filter: { '#i'?: string[]; '#t'?: string[]; since?: number; limit?: number }) {
-  const events = await query([{ kinds: [REPORT_KIND], ...filter }]);
-  const reports = events.map(toReport).filter((r): r is Report => !!r);
-  if (reports.length === 0) return reports;
-  // Demandes de suppression des auteurs concernés : seul l'auteur peut retirer son signalement
-  const authors = [...new Set(reports.map((r) => r.author))];
-  const deletions = await query([{ kinds: [DELETION_KIND], authors, '#k': [String(REPORT_KIND)] }]).catch((): Event[] => []);
+  const { limit, ...tags } = filter;
+  const events = await query([
+    { kinds: [REPORT_KIND], ...filter },
+    { kinds: [DELETION_KIND], ...tags },
+  ]);
+  // Seul l'auteur peut retirer son signalement
   const removed = new Set(
-    deletions.flatMap((d) => d.tags.filter((t) => t[0] === 'e').map((t) => `${d.pubkey}:${t[1]}`)),
+    events
+      .filter((e) => e.kind === DELETION_KIND)
+      .flatMap((d) => d.tags.filter((t) => t[0] === 'e').map((t) => `${d.pubkey}:${t[1]}`)),
   );
-  return reports.filter((r) => !removed.has(`${r.author}:${r.id}`));
+  return events
+    .filter((e) => e.kind === REPORT_KIND)
+    .map(toReport)
+    .filter((r): r is Report => !!r && !removed.has(`${r.author}:${r.id}`));
 }
 
 /**
@@ -246,8 +255,17 @@ async function linkedTargets(target: string): Promise<string[]> {
  * `contactIdentities` : identités Spark des contacts, pour compter ceux qui ont signalé.
  */
 export async function reportsFor(target: string, contactIdentities: string[] = []): Promise<TargetReports | null> {
-  const linked = await linkedTargets(target).catch((): string[] => []);
-  const reports = await fetchReports({ '#i': [target, ...linked] });
+  // En même temps : les signalements de la cible, et le compte lié suivi de ses signalements
+  const [direct, { linked, reports: linkedReports }] = await Promise.all([
+    fetchReports({ '#i': [target] }),
+    linkedTargets(target)
+      .catch((): string[] => [])
+      .then(async (list) => ({
+        linked: list,
+        reports: list.length > 0 ? await fetchReports({ '#i': list }).catch((): Report[] => []) : [],
+      })),
+  ]);
+  const reports = [...direct, ...linkedReports];
   if (reports.length === 0) return null;
   // On ne garde que ce qui vise vraiment la cible ou une cible liée (pas une étiquette ajoutée en plus)
   const relevant = reports.filter(
@@ -259,10 +277,11 @@ export async function reportsFor(target: string, contactIdentities: string[] = [
   const [summary] = summarize(relevant.map((r) => ({ ...r, target })));
   if (!summary) return null;
 
-  const me = await myPubkey().catch(() => null);
   const contacts = new Set(contactIdentities);
-  const reporters =
-    contacts.size > 0 ? await profilesOfAuthors(summary.authors).catch(() => []) : [];
+  const [me, reporters] = await Promise.all([
+    myPubkey().catch(() => null),
+    contacts.size > 0 ? profilesOfAuthors(summary.authors).catch(() => []) : Promise.resolve([]),
+  ]);
   return {
     ...summary,
     mine: !!me && summary.authors.includes(me),
