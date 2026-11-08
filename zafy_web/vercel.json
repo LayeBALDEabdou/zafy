@@ -2,7 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/ajouter-contact", "destination": "/index.html" },
-    { "source": "/payer", "destination": "/index.html" }
+    { "source": "/payer", "destination": "/index.html" },
+    { "source": "/ajouter-contact/:phone", "destination": "/index.html" },
+    { "source": "/payer/:phone", "destination": "/index.html" }
   ],
   "headers": [
     {

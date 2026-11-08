@@ -60,6 +60,7 @@ const fr = {
     noApp: 'Tu n’as pas encore Zafy ?',
     getApp: 'Télécharger l’app',
     invalid: 'Ce lien de carte Zafy est incomplet ou abîmé.',
+    someone: 'Un utilisateur Zafy',
     home: 'Découvrir Zafy',
   },
   pay: {
@@ -136,6 +137,7 @@ const en: Dictionary = {
     noApp: 'Don’t have Zafy yet?',
     getApp: 'Download the app',
     invalid: 'This Zafy card link is incomplete or damaged.',
+    someone: 'A Zafy user',
     home: 'Discover Zafy',
   },
   pay: {

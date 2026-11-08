@@ -17,9 +17,11 @@ function formatPhone(phone: string) {
  */
 export function ContactPage({ t, apkUrl }: { t: Dictionary; apkUrl: string }) {
   const params = new URLSearchParams(window.location.search)
-  const name = params.get('n')?.trim()
-  const address = params.get('a')?.trim()
-  const phone = params.get('p')?.trim()
+  // Lien court « /ajouter-contact/771234567 » : l'app retrouve le prénom et l'adresse dans l'annuaire Zafy
+  const shortPhone = window.location.pathname.match(/^\/ajouter-contact\/(\d{8,15})\/?$/)?.[1]
+  const name = shortPhone ? t.contact.someone : params.get('n')?.trim()
+  const address = shortPhone ?? params.get('a')?.trim()
+  const phone = shortPhone ?? params.get('p')?.trim()
 
   if (!name || !address) {
     return (
@@ -34,12 +36,13 @@ export function ContactPage({ t, apkUrl }: { t: Dictionary; apkUrl: string }) {
     )
   }
 
-  const query = window.location.search.slice(1)
+  // Même chemin dans l'app : « zafy://ajouter-contact/771234567 » ou « zafy://ajouter-contact?n=… »
+  const path = `${window.location.pathname.slice(1)}${window.location.search}`
   // Android : lien « intent » qui ouvre l'app, ou la section téléchargement si elle n'est pas installée
   const isAndroid = /android/i.test(navigator.userAgent)
   const openUrl = isAndroid
-    ? `intent://ajouter-contact?${query}#Intent;scheme=zafy;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(`${window.location.origin}/#telecharger`)};end`
-    : `zafy://ajouter-contact?${query}`
+    ? `intent://${path}#Intent;scheme=zafy;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(`${window.location.origin}/#telecharger`)};end`
+    : `zafy://${path}`
 
   return (
     <main className="container contact-page">
