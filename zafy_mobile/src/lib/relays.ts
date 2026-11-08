@@ -12,10 +12,25 @@ if (typeof globalThis.crypto?.getRandomValues !== 'function') {
   Object.assign(globalThis, { crypto: { ...globalThis.crypto, getRandomValues } });
 }
 
-/** Relais publics où Zafy publie et lit (signalements, profils). */
-const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
-const CONNECT_MS = 3000;
-const WAIT_MS = 4000;
+/**
+ * Relais publics où Zafy publie et lit (signalements, profils).
+ * Plusieurs relais : chacun peut être lent, injoignable ou refuser de garder un événement.
+ */
+const RELAYS = [
+  'wss://relay.damus.io',
+  'wss://nos.lol',
+  'wss://relay.primal.net',
+  'wss://nostr.mom',
+  'wss://relay.snort.social',
+];
+/** Certains relais mettent plusieurs secondes à accepter la connexion (réseau mobile). */
+const CONNECT_MS = 6000;
+const WAIT_MS = 6000;
+/**
+ * Pour conclure « rien trouvé », il faut que ce nombre de relais aient vraiment répondu :
+ * un seul relais rapide qui n'a pas l'événement ne doit pas faire croire qu'il n'existe pas.
+ */
+const MIN_ANSWERS = 2;
 
 /** Aucun relais n'a répondu : on ne sait rien (à ne jamais confondre avec « aucun résultat »). */
 export class RelayError extends Error {
@@ -55,14 +70,15 @@ export async function publish(template: Omit<EventTemplate, 'created_at'>) {
 }
 
 /**
- * Événements correspondant aux filtres, sur tous les relais.
- * Lève `RelayError` si aucun relais n'a vraiment répondu : une liste vide veut alors dire
- * « rien trouvé », jamais « pas de connexion ». Les signatures sont vérifiées par le pool.
+ * Événements correspondant aux filtres, sur tous les relais (signatures vérifiées par le pool).
+ * - Des événements trouvés suffisent, même si un seul relais a répondu.
+ * - Une liste vide n'est renvoyée que si au moins `MIN_ANSWERS` relais ont vraiment répondu :
+ *   elle veut alors dire « rien trouvé ». Sinon `RelayError` (« vérification impossible »).
  */
 export async function query(filters: Filter[]): Promise<Event[]> {
   const events = new Map<string, Event>();
-  const answered = await Promise.all(RELAYS.map((url) => queryRelay(url, filters, events)));
-  if (!answered.includes(true)) throw new RelayError();
+  const answered = (await Promise.all(RELAYS.map((url) => queryRelay(url, filters, events)))).filter(Boolean).length;
+  if (events.size === 0 && answered < Math.min(MIN_ANSWERS, RELAYS.length)) throw new RelayError();
   return [...events.values()];
 }
 
