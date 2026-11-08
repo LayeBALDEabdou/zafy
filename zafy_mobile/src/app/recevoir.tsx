@@ -15,7 +15,7 @@ import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
 import { createSparkInvoice } from '@/lib/breez';
 import { formatValue, parseInput } from '@/lib/currency';
-import { paymentLink, shortPaymentLink } from '@/lib/paymentLink';
+import { paymentLink } from '@/lib/paymentLink';
 import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
@@ -25,7 +25,7 @@ import { colors, fonts } from '@/theme';
  */
 export default function Recevoir() {
   const { t } = useT();
-  const { profile, directory } = useWallet();
+  const { profile } = useWallet();
   const { currency, format, unit, decimals, inputToSats, formatInput, inputHint, quickAmounts } = useCurrency();
   /** Montant demandé, saisi dans la devise choisie (vide ou 0 = le payeur choisit). */
   const [amount, setAmount] = useState(quickAmounts[1]);
@@ -70,14 +70,8 @@ export default function Recevoir() {
       message: t('receive.shareMessage', {
         amount: amountText ? `${amountText} ` : '',
         // Lien https cliquable dans WhatsApp / SMS : il ouvre Zafy sur Envoyer avec la facture
-        // Publié dans l'annuaire : lien court (numéro + montant) ; sinon le lien contient la facture
-        link:
-          profile && address && directory === 'synced'
-            ? shortPaymentLink({
-                phone: profile.phone,
-                ...(sats > 0 && currency !== 'SAT' ? { amount: parseInput(amount, currency), currency } : {}),
-              })
-            : paymentLink({ invoice: request, name: firstName, amount: amountText || undefined }),
+        // Lien long : il contient la facture, il marche sans l'annuaire
+        link: paymentLink({ invoice: request, name: firstName, amount: amountText || undefined }),
       }),
     });
   };
