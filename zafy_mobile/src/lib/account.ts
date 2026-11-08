@@ -14,6 +14,11 @@ export type Profile = {
   firstName: string;
   /** 9 chiffres, sans indicatif (ex. 771234567). */
   phone: string;
+  /**
+   * Trouvable dans l'annuaire Zafy : les autres peuvent payer « 771234567@zafy ».
+   * Absent = oui (comptes créés avant cette option).
+   */
+  discoverable?: boolean;
 };
 
 /** 12 mots BIP39 (anglais, la norme reconnue par tous les wallets). */

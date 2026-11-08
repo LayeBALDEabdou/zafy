@@ -12,6 +12,7 @@ import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
+import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
 /** B — Inscription */
@@ -26,7 +27,7 @@ export default function Inscription() {
   const pinRef = useRef<TextInputInstance>(null);
 
   const digits = phone.replace(/\D/g, '');
-  const address = `${digits || '77xxxxxxx'}@zafy.app`;
+  const address = zafyAddress(digits || '77xxxxxxx');
   const canSubmit = name.trim().length > 0 && digits.length === 9 && pin.length === 4;
 
   const submit = async () => {

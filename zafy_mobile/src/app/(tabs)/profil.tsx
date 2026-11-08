@@ -21,6 +21,7 @@ import { LANGUAGES, useT } from '@/i18n';
 import { getSparkAddress } from '@/lib/breez';
 import { confirmAction } from '@/lib/confirm';
 import { contactCardLink } from '@/lib/contactCard';
+import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
 /** « 771234567 » → « +221 77 123 45 67 » */
@@ -31,7 +32,8 @@ const shorten = (s: string) => (s.length > 22 ? `${s.slice(0, 10)}…${s.slice(-
 /** 12 — Profil */
 export default function Profil() {
   const { t, language } = useT();
-  const { profile, lock } = useWallet();
+  const { profile, lock, directory, syncDirectory } = useWallet();
+  const discoverable = profile?.discoverable !== false;
   const [scamAlerts, setScamAlerts] = useState(true);
   const [address, setAddress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -137,6 +139,23 @@ export default function Profil() {
           label={t('common.phoneShort')}
           onPress={() => router.push('/modifier-profil')}
           right={<Value>{profile ? formatPhone(profile.phone) : ''}</Value>}
+        />
+        {/* Adresse Zafy : publiée dans l'annuaire, on peut être payé avec son numéro */}
+        <Row
+          icon="send"
+          label={t('profile.zafyAddress')}
+          onPress={directory === 'error' ? syncDirectory : () => router.push('/modifier-profil')}
+          right={
+            <Value>
+              {!profile || !discoverable
+                ? t('profile.zafyAddressHidden')
+                : directory === 'error'
+                  ? t('profile.zafyAddressRetry')
+                  : directory === 'syncing'
+                    ? t('profile.zafyAddressSyncing')
+                    : zafyAddress(profile.phone)}
+            </Value>
+          }
         />
         <Row
           icon="bolt"

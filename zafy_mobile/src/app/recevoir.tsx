@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'rea
 
 import { Button, PrimaryButton } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { AmountInput, ChoiceGroup, Label } from '@/components/Form';
+import { AmountInput, Label } from '@/components/Form';
 import { HeroCard } from '@/components/HeroCard';
 import { Icon } from '@/components/Icon';
 import { QR_SIZE, QrCode } from '@/components/QrCode';
@@ -14,72 +14,70 @@ import { formatNumber } from '@/data/mock';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
-import { createInvoice, createSparkInvoice } from '@/lib/breez';
+import { createSparkInvoice } from '@/lib/breez';
+import { paymentLink } from '@/lib/paymentLink';
+import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
-/** « lnbcrt50u1p…k3x9 » : début et fin de la facture. */
-const shorten = (s: string) => (s.length > 24 ? `${s.slice(0, 12)}…${s.slice(-8)}` : s);
-
-const FORMATS = ['zafy', 'other'] as const;
-
 /**
- * 04 — Recevoir : facture réelle, régénérée quand le montant change.
- * « Zafy » = facture Spark : le payeur Zafy y lit ton identité et voit ton nom s'il t'a dans ses contacts.
- * « Autre portefeuille » = facture Lightning, lisible partout.
+ * 04 — Recevoir : un QR avec la facture Zafy (Spark), régénérée quand le montant change.
+ * Le payeur Zafy y lit l'identité de celui qui reçoit : il voit son nom s'il l'a dans ses contacts.
  */
 export default function Recevoir() {
   const { t } = useT();
   const { profile } = useWallet();
   const { unit, decimals, inputToSats, formatInput, inputHint, quickAmounts } = useCurrency();
-  const [format, setFormat] = useState<(typeof FORMATS)[number]>('zafy');
-  /** Montant demandé, saisi dans la devise choisie. */
+  /** Montant demandé, saisi dans la devise choisie (vide ou 0 = le payeur choisit). */
   const [amount, setAmount] = useState(quickAmounts[1]);
-  const [invoice, setInvoice] = useState<string | null>(null);
+  const [request, setRequest] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'request' | 'address' | null>(null);
   const sats = inputToSats(amount);
-  const zafy = format === 'zafy';
   const firstName = profile?.firstName;
+  // Adresse Zafy : affichée seulement si l'utilisateur est trouvable par son numéro
+  const address = profile && profile.discoverable !== false ? zafyAddress(profile.phone) : null;
 
   useEffect(() => {
     let cancelled = false;
     // Petite attente pour ne pas créer une facture à chaque chiffre tapé.
     const timer = setTimeout(() => {
-      setInvoice(null);
+      setRequest(null);
       setError(null);
       const description = firstName ? t('receive.invoiceFor', { name: firstName }) : t('receive.invoiceDefault');
-      (zafy ? createSparkInvoice(sats, description) : createInvoice(sats, description))
-        .then((inv) => !cancelled && setInvoice(inv))
+      createSparkInvoice(sats, description)
+        .then((invoice) => !cancelled && setRequest(invoice))
         .catch((e) => !cancelled && setError(e instanceof Error ? e.message : String(e)));
     }, 500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [sats, zafy, firstName, t]);
+  }, [sats, firstName, t]);
 
-  const copy = async () => {
-    if (!invoice) return;
-    await Clipboard.setStringAsync(invoice);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copy = async (what: 'request' | 'address') => {
+    const value = what === 'request' ? request : address;
+    if (!value) return;
+    await Clipboard.setStringAsync(value);
+    setCopied(what);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const share = () =>
-    invoice &&
+    request &&
     Share.share({
       message: t('receive.shareMessage', {
         amount: sats > 0 ? `${formatNumber(sats)} sats ` : '',
-        request: zafy ? invoice : `lightning:${invoice}`,
+        // Lien https cliquable dans WhatsApp / SMS : il ouvre Zafy sur Envoyer avec la facture
+        link: paymentLink({ invoice: request, name: firstName, sats }),
       }),
     });
 
   return (
     <Screen header={<ScreenHeader title={t('receive.title')} />}>
       <HeroCard variant="large" style={styles.hero}>
-        {invoice ? (
-          // Majuscules : QR plus compact (mode alphanumérique), lu par tous les wallets
-          <QrCode value={(zafy ? invoice : `lightning:${invoice}`).toUpperCase()} />
+        {request ? (
+          // Majuscules : QR plus compact (mode alphanumérique) ; le scanner Zafy remet en minuscules
+          <QrCode value={request.toUpperCase()} />
         ) : (
           <View style={styles.qrBox}>
             {error ? (
@@ -89,27 +87,18 @@ export default function Recevoir() {
             )}
           </View>
         )}
-        <Pressable onPress={copy} disabled={!invoice} style={styles.invoiceRow} accessibilityLabel={t('receive.copyInvoice')}>
-          <Text style={styles.invoice}>{copied ? t('receive.copied') : invoice ? shorten(invoice) : error ? t('receive.none') : t('receive.creating')}</Text>
-          {invoice ? <Icon name={copied ? 'check' : 'copy'} size={16} color={colors.turquoise} /> : null}
-        </Pressable>
+        {address ? (
+          // Entre utilisateurs Zafy, le numéro suffit : pas besoin de scanner
+          <Pressable onPress={() => copy('address')} style={styles.invoiceRow} accessibilityLabel={t('receive.copyAddress')}>
+            <Text style={styles.invoice}>{copied === 'address' ? t('common.copied') : address}</Text>
+            <Icon name={copied === 'address' ? 'check' : 'copy'} size={16} color={colors.turquoise} />
+          </Pressable>
+        ) : (
+          <Text style={styles.invoice}>{request ? t('receive.scanMe') : error ? t('receive.none') : t('receive.creating')}</Text>
+        )}
       </HeroCard>
 
-      <Card style={styles.amountCard}>
-        <ChoiceGroup
-          options={FORMATS}
-          value={format}
-          onChange={setFormat}
-          columns={2}
-          segmented
-          getLabel={(o) => (o === 'zafy' ? t('receive.formatZafy') : t('receive.formatOther'))}
-        />
-        <Text style={styles.formatHint}>
-          {zafy
-            ? t('receive.zafyHint')
-            : t('receive.otherHint')}
-        </Text>
-      </Card>
+      <Text style={styles.formatHint}>{t('receive.unifiedHint')}</Text>
 
       <Card style={styles.amountCard}>
         <Label hint={t('receive.freeAmount')}>{t('common.amount')}</Label>
@@ -123,7 +112,12 @@ export default function Recevoir() {
       </Card>
 
       <View style={styles.buttons}>
-        <Button title={t('common.copy')} variant="secondary" style={styles.flex} onPress={copy} />
+        <Button
+          title={copied === 'request' ? t('receive.copied') : t('receive.copyInvoice')}
+          variant="secondary"
+          style={styles.flex}
+          onPress={() => copy('request')}
+        />
         <PrimaryButton title={t('common.share')} style={styles.flex} onPress={share} />
       </View>
     </Screen>
@@ -144,7 +138,14 @@ const styles = StyleSheet.create({
   invoiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   invoice: { fontFamily: fonts.sora600, fontSize: 16, color: colors.white },
   amountCard: { gap: 6 },
-  formatHint: { fontFamily: fonts.inter400, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 4 },
+  formatHint: {
+    fontFamily: fonts.inter400,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
   buttons: { flexDirection: 'row', gap: 10 },
   flex: { flex: 1 },
 });

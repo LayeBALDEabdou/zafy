@@ -9,8 +9,18 @@ import { ChoiceGroup, Input, Label, TextArea } from '@/components/Form';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useOwnReports } from '@/hooks/useOwnReports';
 import { useT } from '@/i18n';
-import { publishReport, REPORT_TYPES, reportTypeLabel, resolveTarget, targetToInput, type ReportType } from '@/lib/nostr';
+import {
+  MAX_REPORT_MESSAGE,
+  publishReport,
+  REPORT_TYPES,
+  reportsFor,
+  reportTypeLabel,
+  resolveTarget,
+  targetToInput,
+  type ReportType,
+} from '@/lib/nostr';
 import { cleanDestination, onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
 
@@ -24,6 +34,7 @@ export default function Signaler() {
   const [message, setMessage] = useState(params.message ?? '');
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ownTargets = useOwnReports().targets;
 
   // Résultat du scanner de QR code
   useEffect(() => onScan((data) => setTarget(cleanDestination(data))), []);
@@ -35,6 +46,10 @@ export default function Signaler() {
     try {
       const resolved = await resolveTarget(target);
       if (!resolved) return setError(t('report.errUnknown'));
+      if (ownTargets.includes(resolved)) return setError(t('report.errSelf'));
+      // Déjà signalé par l'utilisateur : on montre l'alerte au lieu de publier un doublon
+      const existing = await reportsFor(resolved).catch(() => null);
+      if (existing?.mine) return setError(t('report.errAlreadyReported'));
       await publishReport({ target: resolved, type, message });
       router.replace({ pathname: '/alerte/[id]', params: { id: resolved, published: '1' } });
     } catch (e) {
@@ -85,7 +100,15 @@ export default function Signaler() {
 
       <Card fill style={styles.section}>
         <Label hint={t('common.optional')}>{t('report.message')}</Label>
-        <TextArea value={message} onChangeText={setMessage} placeholder={t('report.messagePlaceholder')} />
+        <TextArea
+          value={message}
+          onChangeText={setMessage}
+          maxLength={MAX_REPORT_MESSAGE}
+          placeholder={t('report.messagePlaceholder')}
+        />
+        <Text style={styles.counter}>
+          {message.length} / {MAX_REPORT_MESSAGE}
+        </Text>
       </Card>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -117,6 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scan: { backgroundColor: colors.navy },
+  counter: { alignSelf: 'flex-end', fontFamily: fonts.inter400, fontSize: 12, color: colors.textSecondary },
   error: { fontFamily: fonts.inter600, fontSize: 14, color: colors.dangerText, textAlign: 'center' },
   privacy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   privacyText: { fontFamily: fonts.inter400, fontSize: 13, color: colors.textSecondary },

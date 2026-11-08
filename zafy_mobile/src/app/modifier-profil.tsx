@@ -6,11 +6,13 @@ import { PrimaryButton } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input, Label } from '@/components/Form';
 import { Icon } from '@/components/Icon';
+import { Toggle } from '@/components/Toggle';
 import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
 import type { Profile } from '@/lib/account';
+import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
 /** « 771234567 » → « 77 123 45 67 » pour l'affichage dans le champ. */
@@ -36,6 +38,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
   const { updateProfile } = useWallet();
   const [name, setName] = useState(profile.firstName);
   const [phone, setPhone] = useState(spaced(profile.phone));
+  const [discoverable, setDiscoverable] = useState(profile.discoverable !== false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +50,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
     if (digits.length !== 9) return setError(t('common.phoneNineDigits'));
     setSaving(true);
     try {
-      await updateProfile({ firstName: name.trim(), phone: digits });
+      await updateProfile({ firstName: name.trim(), phone: digits, discoverable });
       router.back();
     } catch (e) {
       setError(t('profile.editFailed', { error: e instanceof Error ? e.message : String(e) }));
@@ -77,6 +80,17 @@ function ProfileForm({ profile }: { profile: Profile }) {
               style={styles.flex}
             />
           </View>
+        </View>
+        <View style={styles.toggleRow}>
+          <View style={styles.flex}>
+            <Text style={styles.toggleTitle}>{t('profile.discoverable')}</Text>
+            <Text style={styles.noteText}>
+              {discoverable
+                ? t('profile.discoverableOn', { address: zafyAddress(digits.length === 9 ? digits : '77xxxxxxx') })
+                : t('profile.discoverableOff')}
+            </Text>
+          </View>
+          <Toggle value={discoverable} onChange={setDiscoverable} label={t('profile.discoverable')} />
         </View>
         <View style={styles.note}>
           <Icon name="lock" size={16} color={colors.successText} />
@@ -110,6 +124,8 @@ const styles = StyleSheet.create({
   },
   prefixText: { fontFamily: fonts.inter600, fontSize: 15, color: colors.white },
   flex: { flex: 1, minWidth: 0 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  toggleTitle: { fontFamily: fonts.inter600, fontSize: 15, color: colors.navy, marginBottom: 2 },
   note: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   noteText: { flex: 1, fontFamily: fonts.inter400, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
   error: { fontFamily: fonts.inter600, fontSize: 14, color: colors.dangerText, textAlign: 'center' },

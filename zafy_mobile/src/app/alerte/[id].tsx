@@ -1,3 +1,5 @@
+'use no memo'; // Dates et libellés traduits hors composant : recalculés à chaque rendu (changement de langue)
+
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -13,7 +15,8 @@ import { useContacts } from '@/hooks/useContacts';
 import { useOwnReports } from '@/hooks/useOwnReports';
 import { plural, useT } from '@/i18n';
 import { contactPhone } from '@/lib/contacts';
-import { formatTarget, isPhoneTarget, reportsFor, reportTypeLabel, type ReportSummary } from '@/lib/nostr';
+import { confirmAction } from '@/lib/confirm';
+import { formatTarget, isPhoneTarget, reportsFor, reportTypeLabel, retractReport, type TargetReports } from '@/lib/nostr';
 import { colors, fonts } from '@/theme';
 import { formatAgo, formatShortDate } from '@/utils/date';
 
@@ -21,16 +24,40 @@ import { formatAgo, formatShortDate } from '@/utils/date';
 export default function AlerteDetail() {
   const { t } = useT();
   const { id, published } = useLocalSearchParams<{ id: string; published?: string }>();
-  const [summary, setSummary] = useState<ReportSummary | null | undefined>(undefined);
+  const [summary, setSummary] = useState<TargetReports | null | undefined>(undefined);
   const [error, setError] = useState(false);
+  const [retracting, setRetracting] = useState(false);
+  const [retractError, setRetractError] = useState<string | null>(null);
   const own = useOwnReports().targets.includes(id);
-  const contact = useContacts().find(id);
+  const { contacts, find } = useContacts();
+  const contact = find(id);
+  const identitiesKey = contacts
+    .map((c) => c.identity)
+    .filter(Boolean)
+    .join(',');
 
   const load = useCallback(() => {
-    reportsFor(id)
+    reportsFor(id, identitiesKey ? identitiesKey.split(',') : [])
       .then(setSummary)
       .catch(() => setError(true));
-  }, [id]);
+  }, [id, identitiesKey]);
+
+  const retract = async () => {
+    const ok = await confirmAction(t('alerts.retractTitle'), t('alerts.retractMessage'), t('alerts.retract'), true);
+    if (!ok) return;
+    setRetracting(true);
+    setRetractError(null);
+    try {
+      await retractReport(id);
+      // Les relais suppriment le signalement : on recharge pour l'afficher sans lui
+      setSummary(undefined);
+      load();
+    } catch (e) {
+      setRetractError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRetracting(false);
+    }
+  };
 
   useEffect(load, [load]);
 
@@ -84,6 +111,11 @@ export default function AlerteDetail() {
           <Text style={styles.count}>
             {count === 0 ? t('alerts.noReports') : t(plural('alerts.reportedBy', count), { n: count })}
           </Text>
+          {summary && summary.fromContacts > 0 ? (
+            <Text style={styles.contactLine}>
+              {t(plural('alerts.fromContacts', summary.fromContacts), { n: summary.fromContacts })}
+            </Text>
+          ) : null}
         </View>
       </HeroCard>
 
@@ -109,6 +141,15 @@ export default function AlerteDetail() {
             </Card>
           ) : null}
 
+          {summary.linked.length > 0 ? (
+            <View style={styles.linked}>
+              <Icon name="user" size={16} color={colors.textSecondary} />
+              <Text style={styles.linkedText}>
+                {isPhoneTarget(id) ? t('alerts.linkedAccount') : t('alerts.linkedPhone')}
+              </Text>
+            </View>
+          ) : null}
+
           <Card fill style={styles.info}>
             <InfoRow label={t('alerts.lastReport')} value={formatAgo(summary.last)} />
             <InfoRow label={t('alerts.firstReport')} value={formatShortDate(summary.first)} />
@@ -130,6 +171,19 @@ export default function AlerteDetail() {
             {t('alerts.ownExplanation')}
           </Text>
         </Card>
+      ) : summary?.mine ? (
+        <View style={styles.section}>
+          <View style={styles.linked}>
+            <Icon name="check" size={16} color={colors.successText} />
+            <Text style={styles.linkedText}>{t('alerts.youReported')}</Text>
+          </View>
+          {retractError ? <Text style={styles.error}>{retractError}</Text> : null}
+          <Button
+            title={retracting ? t('alerts.retracting') : t('alerts.retract')}
+            variant="secondary"
+            onPress={retracting ? undefined : retract}
+          />
+        </View>
       ) : !published ? (
         <Button
           title={count > 0 ? t('alerts.meToo') : t('alerts.report')}
@@ -186,5 +240,8 @@ const styles = StyleSheet.create({
   info: { paddingVertical: 6, justifyContent: 'space-around', gap: 16 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   infoLabel: { fontFamily: fonts.inter400, fontSize: 15, color: colors.textSecondary },
+  linked: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
+  linkedText: { flex: 1, fontFamily: fonts.inter400, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
+  error: { fontFamily: fonts.inter600, fontSize: 14, color: colors.dangerText, textAlign: 'center' },
   infoValue: { fontFamily: fonts.inter600, fontSize: 15, color: colors.navy },
 });

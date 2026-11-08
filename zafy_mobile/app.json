@@ -32,6 +32,11 @@
               "scheme": "https",
               "host": "zafy.vercel.app",
               "pathPrefix": "/ajouter-contact"
+            },
+            {
+              "scheme": "https",
+              "host": "zafy.vercel.app",
+              "pathPrefix": "/payer"
             }
           ],
           "category": [

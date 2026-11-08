@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -19,7 +19,9 @@ import { describeDestination, prepareSend, sendPrepared, type Destination } from
 import { confirmAction } from '@/lib/confirm';
 import { parseContactCard, type ContactCard } from '@/lib/contactCard';
 import { contactPhone, onContactPick } from '@/lib/contacts';
-import { reportsFor, resolveTarget } from '@/lib/nostr';
+import { lookupPhone, type PhoneLookup } from '@/lib/directory';
+import { formatTarget, reportsFor, resolveTarget } from '@/lib/nostr';
+import { parseZafyAddress } from '@/lib/phone';
 import { cleanDestination, onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
 
@@ -31,7 +33,23 @@ const KIND_LABEL = {
   other: 'send.kindOther',
 } as const satisfies Record<Destination['kind'], string>;
 
+/** Pourquoi un numéro ne peut pas être payé. */
+const ALIAS_ERROR = {
+  none: 'send.zafyNone',
+  contested: 'send.zafyContested',
+  error: 'send.zafyError',
+} as const;
+
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** Signalements Nostr du destinataire. `error` = relais injoignables : on ne sait pas, on ne rassure pas. */
+type ReportsState =
+  | { status: 'checking' }
+  | { status: 'error' }
+  | { status: 'done'; target: string; count: number; fromContacts: number };
+
+/** Adresse Zafy (« 771234567@zafy ») recherchée dans l'annuaire. */
+type AliasState = { phone: string } & (PhoneLookup | { status: 'error' });
 
 /** 02 — Envoyer : facture Lightning, adresse Spark ou adresse Bitcoin. */
 export default function Envoyer() {
@@ -39,7 +57,9 @@ export default function Envoyer() {
   const { balanceSats, refresh } = useWallet();
   const { currency, format, unit, decimals, inputToSats, formatInput, inputFromSats, inputHint, quickAmounts } =
     useCurrency();
-  const [to, setTo] = useState('');
+  // Lien de paiement ouvert (« /payer ») : la facture arrive déjà remplie
+  const params = useLocalSearchParams<{ to?: string }>();
+  const [to, setTo] = useState(() => (params.to ? cleanDestination(params.to) : ''));
   /** Montant saisi dans la devise choisie (converti en sats pour l'envoi). */
   const [amount, setAmount] = useState(quickAmounts[1]);
   /** Destination reconnue, avec le texte analysé (pour ignorer un résultat qui ne correspond plus au champ). */
@@ -48,13 +68,21 @@ export default function Envoyer() {
   const [error, setError] = useState<string | null>(null);
   /** Carte Zafy scannée (personne pas encore dans l'annuaire). */
   const [card, setCard] = useState<ContactCard | null>(null);
-  /** Signalements Nostr du destinataire : `undefined` = vérification en cours, `null` = impossible à vérifier. */
-  const [reports, setReports] = useState<{ target: string; count: number } | null | undefined>(null);
+  /** `null` = rien à vérifier (champ vide ou destination non reconnue). */
+  const [reports, setReports] = useState<ReportsState | null>(null);
+  const [alias, setAlias] = useState<AliasState | null>(null);
 
-  const { find } = useContacts();
+  const { contacts, find } = useContacts();
   const input = to.trim();
-  const current = dest?.input === input ? dest : null;
-  const reading = input.length >= 10 && !current;
+  // Numéro ou « 771234567@zafy » : on paie l'adresse Spark publiée dans l'annuaire Zafy
+  const aliasPhone = parseZafyAddress(input);
+  const aliasResult = aliasPhone && alias?.phone === aliasPhone ? alias : null;
+  const zafyProfile = aliasResult?.status === 'found' ? aliasResult.profile : null;
+  /** Ce qui est réellement payé : l'adresse trouvée pour un numéro, sinon ce qui a été saisi. */
+  const payTo = aliasPhone ? (zafyProfile?.address ?? '') : input;
+  const current = dest?.input === payTo ? dest : null;
+  const lookingUp = !!aliasPhone && !aliasResult;
+  const reading = lookingUp || (payTo.length >= 10 && !current);
   const invoiceKind = current?.kind === 'invoice' || current?.kind === 'sparkInvoice';
   // Montant imposé par une facture : bloqué dès qu'elle est collée ou scannée, même pendant sa lecture
   // (facture Lightning « ln… » ou Spark « spark… »). Seule une facture « montant libre » laisse saisir la somme.
@@ -67,41 +95,64 @@ export default function Envoyer() {
   // Contact de l'annuaire : par son adresse, ou par l'identité Spark contenue dans sa facture
   // (vérifiée par le réseau : le texte de la facture, lui, peut être inventé).
   const contact =
-    find(input) ?? (current?.identityPublicKey ? find(`sparkid:${current.identityPublicKey}`) : null);
+    (payTo ? find(payTo) : null) ?? (current?.identityPublicKey ? find(`sparkid:${current.identityPublicKey}`) : null);
   const quick = quickAmounts.find((q) => q === amount);
 
-  // Cherche sur Nostr si ce destinataire a été signalé
+  // Numéro saisi : cherche le portefeuille Zafy lié dans l'annuaire
+  useEffect(() => {
+    if (!aliasPhone) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      lookupPhone(aliasPhone)
+        .then((res) => !cancelled && setAlias({ phone: aliasPhone, ...res }))
+        .catch(() => !cancelled && setAlias({ phone: aliasPhone, status: 'error' }));
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [aliasPhone]);
+
+  // Cherche sur Nostr si ce destinataire a été signalé (un numéro inclut le compte Zafy qui lui est lié)
+  const reportInput = aliasPhone ? `phone:${aliasPhone}` : payTo;
+  const contactIdentities = contacts.map((c) => c.identity).filter((id): id is string => !!id);
+  const identitiesKey = contactIdentities.join(',');
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const target = await resolveTarget(to).catch(() => null);
+      const target = await resolveTarget(reportInput).catch(() => null);
       if (cancelled) return;
       if (!target) return setReports(null);
-      setReports(undefined);
-      const summary = await reportsFor(target).catch(() => null);
-      if (!cancelled) setReports(summary === null ? { target, count: 0 } : { target, count: summary.count });
+      setReports({ status: 'checking' });
+      try {
+        const summary = await reportsFor(target, identitiesKey ? identitiesKey.split(',') : []);
+        if (!cancelled) {
+          setReports({ status: 'done', target, count: summary?.count ?? 0, fromContacts: summary?.fromContacts ?? 0 });
+        }
+      } catch {
+        if (!cancelled) setReports({ status: 'error' });
+      }
     }, 500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [to]);
+  }, [reportInput, identitiesKey]);
 
-  // Reconnaît la destination dès qu'elle est saisie ou collée.
+  // Reconnaît la destination dès qu'elle est saisie ou collée (ou trouvée dans l'annuaire).
   useEffect(() => {
-    const input = to.trim();
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (input.length < 10) return setDest(null);
-      describeDestination(input)
-        .then((d) => !cancelled && setDest({ ...d, input }))
-        .catch(() => !cancelled && setDest({ kind: 'other', input }));
+      if (payTo.length < 10) return setDest(null);
+      describeDestination(payTo)
+        .then((d) => !cancelled && setDest({ ...d, input: payTo }))
+        .catch(() => !cancelled && setDest({ kind: 'other', input: payTo }));
     }, 300);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [to]);
+  }, [payTo]);
 
   // Contact choisi dans l'annuaire
   useEffect(() => onContactPick((c) => setTo(c.address)), []);
@@ -121,6 +172,9 @@ export default function Envoyer() {
   const send = async () => {
     setError(null);
     if (reading) return;
+    if (aliasResult && aliasResult.status !== 'found') {
+      return setError(t(ALIAS_ERROR[aliasResult.status]));
+    }
     if (!current || current.kind === 'other') {
       return setError(t('send.pasteSomething'));
     }
@@ -130,7 +184,8 @@ export default function Envoyer() {
     setSending(true);
     try {
       // La facture fixe déjà son montant : on n'en envoie pas un second.
-      const prepared = await prepareSend(to, current.amountSats ? 0 : sats);
+      const prepared = await prepareSend(payTo, current.amountSats ? 0 : sats);
+      const recipientName = contact?.name ?? zafyProfile?.name;
       const ok = await confirmAction(
         t('send.confirmTitle', { amount: format(prepared.amountSats) }),
         [
@@ -138,6 +193,13 @@ export default function Envoyer() {
           t('send.total', { amount: format(prepared.amountSats + prepared.feeSats) }),
           // Montant exact réellement envoyé, quand on a saisi dans une monnaie
           currency === 'SAT' ? null : t('send.exactSats', { n: formatNumber(prepared.amountSats + prepared.feeSats) }),
+          recipientName ? t('send.confirmTo', { name: recipientName }) : null,
+          // Dernier rappel avant de payer quelqu'un de signalé, ou quand on n'a pas pu vérifier
+          reports?.status === 'done' && reports.count > 0
+            ? t(plural('send.confirmReported', reports.count), { n: reports.count })
+            : reports?.status === 'error'
+              ? t('send.confirmUnchecked')
+              : null,
         ]
           .filter(Boolean)
           .join('\n'),
@@ -155,7 +217,7 @@ export default function Envoyer() {
           amount: String(prepared.amountSats),
           to: t(KIND_LABEL[current.kind]),
           fee: String(prepared.feeSats),
-          ...(contact ? { name: contact.name } : {}),
+          ...(recipientName ? { name: recipientName } : {}),
         },
       });
     } catch (e) {
@@ -216,21 +278,52 @@ export default function Envoyer() {
               icon={<Icon name="user" size={14} color={colors.successText} strokeWidth={2.6} />}
             />
           ) : null}
+          {/* Numéro ou adresse Zafy : à qui il appartient dans l'annuaire */}
+          {aliasPhone && !contact ? (
+            lookingUp ? (
+              <Badge label={t('send.zafyLooking')} tone="neutral" />
+            ) : zafyProfile ? (
+              <Badge
+                label={t('send.zafyFound', { name: zafyProfile.name, phone: formatTarget(`phone:${aliasPhone}`) })}
+                tone="warning"
+                icon={<Icon name="user" size={14} color={colors.warningText} strokeWidth={2.6} />}
+              />
+            ) : aliasResult ? (
+              <Badge
+                label={t(ALIAS_ERROR[aliasResult.status as keyof typeof ALIAS_ERROR])}
+                tone={aliasResult.status === 'contested' ? 'danger' : 'warning'}
+                icon={<Icon name="alert" size={14} color={colors.warningText} strokeWidth={2.6} />}
+              />
+            ) : null
+          ) : null}
           {current ? (
             <Badge label={t(KIND_LABEL[current.kind])} tone={current.kind === 'other' ? 'warning' : 'neutral'} />
           ) : null}
           {/* Signalements Nostr du destinataire */}
-          {reports === undefined ? (
+          {reports?.status === 'checking' ? (
             <Badge label={t('send.checking')} tone="neutral" />
-          ) : reports && reports.count > 0 ? (
+          ) : reports?.status === 'error' ? (
+            <Badge
+              label={t('send.reportsUnchecked')}
+              tone="warning"
+              icon={<Icon name="alert" size={14} color={colors.warningText} strokeWidth={2.8} />}
+            />
+          ) : reports?.status === 'done' && reports.count > 0 ? (
             <Pressable onPress={() => router.push({ pathname: '/alerte/[id]', params: { id: reports.target } })}>
               <Badge
-                label={t(plural('send.reportedBy', reports.count), { n: reports.count })}
+                label={[
+                  t(plural('send.reportedBy', reports.count), { n: reports.count }),
+                  reports.fromContacts > 0
+                    ? t(plural('send.fromContacts', reports.fromContacts), { n: reports.fromContacts })
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 tone="danger"
                 icon={<Icon name="alert" size={14} color={colors.dangerText} strokeWidth={2.8} />}
               />
             </Pressable>
-          ) : reports ? (
+          ) : reports?.status === 'done' ? (
             <Badge
               label={t('send.noReports')}
               icon={<Icon name="check" size={14} color={colors.successText} strokeWidth={2.8} />}

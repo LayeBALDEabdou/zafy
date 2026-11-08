@@ -1,4 +1,5 @@
 import { parseContactCard } from '@/lib/contactCard';
+import { parsePaymentLink } from '@/lib/paymentLink';
 
 // Transmet le résultat du scanner à l'écran qui l'a ouvert.
 type Listener = (value: string) => void;
@@ -19,19 +20,25 @@ export const emitScan = (value: string) => listeners.at(-1)?.(value);
 /**
  * Nettoie le contenu d'un QR de paiement :
  * - « lightning:LNBC… » → « lnbc… » (les QR sont souvent en majuscules) ;
- * - « bitcoin:adresse?amount=…&lightning=lnbc… » → la facture Lightning si présente, sinon l'adresse ;
- * - carte de contact Zafy → son adresse.
+ * - « bitcoin:adresse?lightning=lnbc…&spark=spark1… » (QR unifié BIP21) → la facture Spark si présente
+ *   (Zafy y lit l'identité de celui qui reçoit), sinon la facture Lightning, sinon l'adresse ;
+ * - carte de contact Zafy → son adresse ;
+ * - lien de paiement Zafy (« https://zafy.vercel.app/payer?r=… ») → sa facture.
  */
 export function cleanDestination(raw: string) {
   const value = raw.trim();
   const card = parseContactCard(value);
   if (card) return card.address;
+  const linked = parsePaymentLink(value);
+  if (linked) return cleanDestination(linked);
   const [scheme, rest] = value.includes(':') ? [value.slice(0, value.indexOf(':')).toLowerCase(), value.slice(value.indexOf(':') + 1)] : ['', value];
 
   if (scheme === 'bitcoin') {
     const [address, query = ''] = rest.split('?');
-    const lightning = new URLSearchParams(query).get('lightning');
-    return lightning ? lightning.toLowerCase() : address;
+    // Noms de paramètres insensibles à la casse (QR en majuscules)
+    const params = new Map([...new URLSearchParams(query)].map(([k, v]) => [k.toLowerCase(), v]));
+    const invoice = params.get('spark') || params.get('lightning');
+    return invoice ? invoice.toLowerCase() : address;
   }
   const body = scheme === 'lightning' ? rest : value;
   // Facture Lightning ou Spark en majuscules (QR compact) → minuscules (format attendu partout)

@@ -149,6 +149,21 @@ export async function createInvoice(amountSats: number, description = t('receive
 }
 
 /** Adresse Spark (fixe) : la plus simple pour recevoir des sats de test. */
+/**
+ * Signe un message avec la clé d'identité Spark du portefeuille.
+ * Sert à prouver qu'une clé Nostr appartient bien à ce portefeuille (profil public Zafy).
+ */
+export async function signWithWallet(message: string) {
+  const res = await requireSdk().signMessage({ message, compact: true });
+  return { identity: res.pubkey, signature: res.signature };
+}
+
+/** Vérifie qu'un message a bien été signé par cette identité Spark. */
+export async function checkWalletSignature(message: string, identity: string, signature: string) {
+  const res = await requireSdk().checkMessage({ message, pubkey: identity, signature });
+  return res.isValid;
+}
+
 export async function getSparkAddress() {
   const res = await requireSdk().receivePayment({ paymentMethod: new ReceivePaymentMethod.SparkAddress() });
   return res.paymentRequest;
