@@ -9,7 +9,8 @@ import walletImage from './assets/wallet.webp'
 import flagEn from './assets/flag-en.png'
 import flagFr from './assets/flag-fr.png'
 import { ContactPage } from './ContactPage'
-import { isContactPage, useLanguage, type Language } from './i18n'
+import { PayPage } from './PayPage'
+import { isContactPage, isPayPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
 /**
@@ -87,6 +88,7 @@ const LANGUAGES: { code: Language; label: string; flag: string }[] = [
 export default function App() {
   const { language, setLanguage, t } = useLanguage()
   const contactPage = isContactPage()
+  const payPage = isPayPage()
 
   const header = (
     <header className="header">
@@ -96,7 +98,7 @@ export default function App() {
           <span>zafy</span>
         </a>
         <div className="header-right">
-          {contactPage ? null : (
+          {contactPage || payPage ? null : (
             <nav className="nav" aria-label="Sections">
               <a href="#fonctionnalites">{t.nav.features}</a>
               <a href="#comment">{t.nav.how}</a>
@@ -130,6 +132,16 @@ export default function App() {
       <>
         {header}
         <ContactPage t={t} apkUrl={APK_URL} />
+      </>
+    )
+  }
+
+  // Lien de demande de paiement partagé : page dédiée, qui renvoie vers l'app
+  if (payPage) {
+    return (
+      <>
+        {header}
+        <PayPage t={t} apkUrl={APK_URL} />
       </>
     )
   }

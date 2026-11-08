@@ -62,6 +62,14 @@ const fr = {
     invalid: 'Ce lien de carte Zafy est incomplet ou abîmé.',
     home: 'Découvrir Zafy',
   },
+  pay: {
+    pageTitle: 'Demande de paiement · Zafy',
+    someone: 'Un utilisateur Zafy',
+    title: 'te demande un paiement',
+    text: 'Ouvre la demande dans l’app Zafy : tu verras le montant, le destinataire et ses signalements avant de confirmer.',
+    open: 'Payer avec Zafy',
+    invalid: 'Ce lien de paiement Zafy est incomplet ou abîmé.',
+  },
   download: {
     title: 'Essaie Zafy sur Android',
     text: 'Version de test : elle fonctionne sur le réseau Bitcoin de test, sans argent réel. Bientôt sur le Play Store.',
@@ -130,6 +138,14 @@ const en: Dictionary = {
     invalid: 'This Zafy card link is incomplete or damaged.',
     home: 'Discover Zafy',
   },
+  pay: {
+    pageTitle: 'Payment request · Zafy',
+    someone: 'A Zafy user',
+    title: 'is asking you for a payment',
+    text: 'Open the request in the Zafy app: you will see the amount, the recipient and any reports before confirming.',
+    open: 'Pay with Zafy',
+    invalid: 'This Zafy payment link is incomplete or damaged.',
+  },
   download: {
     title: 'Try Zafy on Android',
     text: 'Test version: it runs on the Bitcoin test network, with no real money. Coming soon to the Play Store.',
@@ -143,6 +159,8 @@ const DICTIONARIES: Record<Language, Dictionary> = { fr, en }
 
 /** Page « carte de contact » ouverte depuis un lien partagé (/ajouter-contact?n=…&a=…). */
 export const isContactPage = () => window.location.pathname.startsWith('/ajouter-contact')
+/** Page « demande de paiement » ouverte depuis un lien partagé (/payer?r=…). */
+export const isPayPage = () => window.location.pathname.startsWith('/payer')
 const STORAGE_KEY = 'zafy-langue'
 
 /** Langue enregistrée, sinon celle du navigateur (anglais si le navigateur est en anglais, français sinon). */
@@ -162,7 +180,8 @@ export function useLanguage() {
 
   useEffect(() => {
     document.documentElement.lang = language
-    document.title = isContactPage() ? DICTIONARIES[language].contact.pageTitle : DICTIONARIES[language].pageTitle
+    const t = DICTIONARIES[language]
+    document.title = isContactPage() ? t.contact.pageTitle : isPayPage() ? t.pay.pageTitle : t.pageTitle
     try {
       localStorage.setItem(STORAGE_KEY, language)
     } catch {

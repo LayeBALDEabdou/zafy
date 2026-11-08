@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/ajouter-contact", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/ajouter-contact", "destination": "/index.html" },
+    { "source": "/payer", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/.well-known/assetlinks.json",
