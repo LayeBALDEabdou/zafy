@@ -13,6 +13,8 @@ import { useT } from '@/i18n';
 import { describeDestination } from '@/lib/breez';
 import { confirmAction } from '@/lib/confirm';
 import { deleteContact, getContact, saveContact } from '@/lib/contacts';
+import { resolveZafyAddress } from '@/lib/directory';
+import { parseZafyAddress } from '@/lib/phone';
 import { cleanDestination, onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
 
@@ -48,8 +50,16 @@ export default function ContactForm() {
     if (!address.trim()) return setError(t('contacts.errAddress'));
     setSaving(true);
     try {
+      // Adresse Zafy ou numéro : on enregistre l'adresse Spark du compte trouvé dans l'annuaire
+      let zafy;
+      try {
+        zafy = await resolveZafyAddress(address);
+      } catch (e) {
+        return setError(e instanceof Error ? e.message : String(e));
+      }
+      const destination = zafy?.address ?? address.trim();
       // Il faut une adresse qui sert toujours : une facture ne se paie qu'une fois
-      const dest = await describeDestination(address).catch(() => null);
+      const dest = await describeDestination(destination).catch(() => null);
       if (dest?.kind === 'invoice' || dest?.kind === 'sparkInvoice') {
         return setError(t('plans.errInvoice'));
       }
@@ -57,7 +67,13 @@ export default function ContactForm() {
         return setError(t('contacts.errUnknown'));
       }
       await saveContact(
-        { name: name.trim(), phone: phone.trim() || undefined, address: address.trim(), identity: dest.identityPublicKey },
+        {
+          name: name.trim(),
+          // Numéro de l'adresse Zafy si le champ numéro est vide
+          phone: phone.trim() || parseZafyAddress(address)?.phone.replace(/^\+221/, '') || undefined,
+          address: destination,
+          identity: dest.identityPublicKey,
+        },
         id,
       );
       router.back();

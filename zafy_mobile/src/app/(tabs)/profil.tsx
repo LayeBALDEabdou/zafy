@@ -85,9 +85,21 @@ export default function Profil() {
 
         <View style={styles.identity}>
           {/* Prénom long : la taille du texte diminue pour tenir sur une ligne */}
-          <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-            {fullName}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              {fullName}
+            </Text>
+            {/* Compte publié dans l'annuaire Zafy (Nostr) : on peut le payer avec son adresse Zafy */}
+            {discoverable && directory === 'synced' ? (
+              <View
+                style={styles.published}
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={t('profile.publishedOnNostr')}>
+                <Icon name="shieldCheck" size={16} color={colors.navy} strokeWidth={2.4} />
+              </View>
+            ) : null}
+          </View>
           {/* Marge à droite : le bouton « Copier » est posé sur le bord bas de la carte */}
           <Text style={styles.address} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
             {shownAddress === address ? (address ? shorten(address) : '…') : shownAddress}
@@ -212,7 +224,16 @@ const Value = ({ children }: { children: string }) => <Text style={styles.value}
 
 const styles = StyleSheet.create({
   identity: { gap: 4 },
-  name: { fontFamily: fonts.sora700, fontSize: 26, letterSpacing: -0.5, color: colors.white },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { flexShrink: 1, fontFamily: fonts.sora700, fontSize: 26, letterSpacing: -0.5, color: colors.white },
+  published: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.turquoise,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   address: { fontFamily: fonts.inter400, fontSize: 14, color: colors.textOnNavy, paddingRight: 120 },
   qrCard: { alignItems: 'center', gap: 12 },
   qrTitle: { fontFamily: fonts.sora600, fontSize: 16, color: colors.navy },

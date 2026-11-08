@@ -3,7 +3,7 @@ import type { Event } from 'nostr-tools/pure';
 import { t } from '@/i18n';
 import { describeDestination } from '@/lib/breez';
 import { lookupPhone, phoneHash, profilesOfAuthors, profilesOfIdentity } from '@/lib/directory';
-import { isNormalizedPhone, isPhoneLike, normalizePhone } from '@/lib/phone';
+import { isNormalizedPhone, parseZafyAddress } from '@/lib/phone';
 import { myPubkey, publish, query } from '@/lib/relays';
 
 export { normalizePhone } from '@/lib/phone';
@@ -99,7 +99,8 @@ const normalizeBitcoin = (address: string) => (/^(bc|tb|bcrt)1/i.test(address) ?
 
 /**
  * Transforme ce que l'utilisateur a saisi en cible de signalement :
- * numéro de téléphone, compte Spark (adresse ou facture Spark), adresse Bitcoin, ou nœud qui encaisse une facture Lightning.
+ * numéro de téléphone ou adresse Zafy, compte Spark (adresse ou facture Spark), adresse Bitcoin,
+ * ou nœud qui encaisse une facture Lightning.
  */
 export async function resolveTarget(input: string): Promise<string | null> {
   const value = input.trim();
@@ -110,7 +111,10 @@ export async function resolveTarget(input: string): Promise<string | null> {
     const target = kind === 'bitcoin' ? `bitcoin:${normalizeBitcoin(value.slice(8))}` : value;
     return isValidTarget(target) ? target : null;
   }
-  if (isPhoneLike(value)) return `phone:${normalizePhone(value)}`;
+  // Numéro ou adresse Zafy (« a.balde.776511631@zafy ») : on signale le numéro,
+  // et le compte Zafy qui lui est lié est compté avec lui (voir `reportsFor`)
+  const zafy = parseZafyAddress(value);
+  if (zafy) return `phone:${zafy.phone}`;
   const dest = await describeDestination(value).catch(() => null);
   let target: string | null = null;
   switch (dest?.kind) {

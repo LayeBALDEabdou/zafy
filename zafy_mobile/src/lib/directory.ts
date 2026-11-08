@@ -5,7 +5,7 @@ import type { Event } from 'nostr-tools/pure';
 import type { Profile } from '@/lib/account';
 import { t } from '@/i18n';
 import { checkWalletSignature, describeDestination, getIdentity, getSparkAddress, signWithWallet } from '@/lib/breez';
-import { normalizePhone } from '@/lib/phone';
+import { normalizePhone, parseZafyAddress, zafyHandle } from '@/lib/phone';
 import { myPubkey, publish, query, RelayError } from '@/lib/relays';
 
 /**
@@ -230,4 +230,21 @@ export async function ensurePhoneAvailable(phone: string) {
   ]);
   const owners = found.status === 'found' ? [found.profile] : found.status === 'contested' ? found.profiles : [];
   if (owners.some((p) => p.identity !== mine)) throw new Error(t('errors.phoneTaken'));
+}
+
+/**
+ * Adresse Zafy saisie (« a.balde.776511631@zafy » ou un numéro) → le profil vérifié du compte.
+ * `null` si ce n'est pas une adresse Zafy (adresse Spark, Bitcoin, facture…).
+ * Lève une erreur lisible si aucun compte, numéro contesté, nom qui ne correspond pas, ou pas de connexion.
+ */
+export async function resolveZafyAddress(input: string): Promise<PublicProfile | null> {
+  const typed = parseZafyAddress(input);
+  if (!typed) return null;
+  const found = await lookupPhone(typed.phone).catch((e) => {
+    throw e instanceof RelayError ? new Error(t('send.zafyError')) : e;
+  });
+  if (found.status === 'none') throw new Error(t('send.zafyNone'));
+  if (found.status === 'contested') throw new Error(t('send.zafyContested'));
+  if (typed.handle && zafyHandle(found.profile.name) !== typed.handle) throw new Error(t('send.zafyMismatch'));
+  return found.profile;
 }

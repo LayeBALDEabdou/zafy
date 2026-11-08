@@ -17,7 +17,7 @@ import { useT } from '@/i18n';
 import { formatInput as formatInputFor, getCurrencyState, inputFromSats } from '@/lib/currency';
 import { describeDestination } from '@/lib/breez';
 import { parseContactCard, parseShortCard } from '@/lib/contactCard';
-import { lookupPhone } from '@/lib/directory';
+import { lookupPhone, resolveZafyAddress } from '@/lib/directory';
 import { normalizePhone } from '@/lib/phone';
 import { onContactPick } from '@/lib/contacts';
 import { ensureNotificationPermission } from '@/lib/notifications';
@@ -142,8 +142,16 @@ export default function NouveauPlan() {
 
     setSaving(true);
     try {
+      // Adresse Zafy ou numéro : on enregistre l'adresse Spark du compte trouvé dans l'annuaire
+      let zafy;
+      try {
+        zafy = await resolveZafyAddress(to);
+      } catch (e) {
+        return setError(e instanceof Error ? e.message : String(e));
+      }
+      const destination = zafy?.address ?? to.trim();
       // Paiement répété : il faut une adresse réutilisable, pas une facture (valable une seule fois)
-      const dest = await describeDestination(to).catch(() => null);
+      const dest = await describeDestination(destination).catch(() => null);
       if (dest?.kind === 'invoice' || dest?.kind === 'sparkInvoice') {
         return setError(t('plans.errInvoice'));
       }
@@ -153,7 +161,7 @@ export default function NouveauPlan() {
       await ensureNotificationPermission();
       const input = {
         name: name.trim(),
-        destination: to.trim(),
+        destination,
         amountSats: sats,
         fiat: inputToFiat(amount),
         frequency,
