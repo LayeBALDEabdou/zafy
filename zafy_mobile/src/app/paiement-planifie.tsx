@@ -1,7 +1,7 @@
 'use no memo'; // Dates et libellés traduits hors composant : recalculés à chaque rendu (changement de langue)
 
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/Badge';
@@ -15,7 +15,6 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { useContacts } from '@/hooks/useContacts';
 import { useT } from '@/i18n';
 import { contactPhone } from '@/lib/contacts';
-import { claimPlan, hasAutoPayFailed, onAutoPayments, releasePlan, runAutoPayments } from '@/lib/autopay';
 import { prepareSend, sendPrepared } from '@/lib/breez';
 import { confirmAction } from '@/lib/confirm';
 import { advancePlan, deletePlan, describeSchedule, getPlan, isDue, planSats, type Plan } from '@/lib/plans';
@@ -42,13 +41,6 @@ export default function PaiementPlanifie() {
 
   // Rechargé aussi au retour de « Modifier »
   useFocusEffect(reload);
-  // Un envoi automatique a pu partir pendant qu'on regarde l'écran
-  useEffect(() => onAutoPayments(reload), [reload]);
-
-  // Paiement automatique à échéance : on le lance sans attendre le prochain passage
-  useEffect(() => {
-    if (plan?.autoSend && isDue(plan) && status === 'ready') runAutoPayments().catch(() => {});
-  }, [plan, status]);
 
   // Ouvert depuis le rappel alors que l'app est verrouillée : déverrouiller d'abord, puis revenir ici.
   if (status === 'locked') {
@@ -78,19 +70,15 @@ export default function PaiementPlanifie() {
   const recipientLabel = contact
     ? [contact.name, contactPhone(contact)].filter(Boolean).join(' · ')
     : shorten(plan.destination);
-  const autoFailed = !!plan.autoSend && due && hasAutoPayFailed(plan.id);
-  // Envoi automatique en cours : pas de bouton, sinon on risquerait de payer deux fois
-  const autoPending = !!plan.autoSend && due && !autoFailed;
 
   const send = async () => {
     setError(null);
     // Montant en monnaie : converti au taux du jour
     const sats = planSats(plan);
     if (balanceSats !== null && sats > balanceSats) return setError(t('send.insufficient'));
-    if (!claimPlan(plan.id)) return setError(t('plans.inProgress'));
     setBusy('send');
     try {
-      // Relu juste avant l'envoi : il a pu partir automatiquement entre-temps
+      // Relu juste avant l'envoi : il a pu être payé ou modifié depuis un autre écran
       const fresh = await getPlan(plan.id);
       if (!fresh || fresh.nextDate !== plan.nextDate) {
         setPlan(fresh);
@@ -116,7 +104,6 @@ export default function PaiementPlanifie() {
     } catch (e) {
       setError(t('send.failed', { error: errorText(e) }));
     } finally {
-      releasePlan(plan.id);
       setBusy(null);
     }
   };
@@ -139,9 +126,7 @@ export default function PaiementPlanifie() {
   return (
     <Screen header={<ScreenHeader title={t('plans.detailTitle')} />}>
       <HeroCard>
-        {autoPending ? (
-          <Badge label={t('plans.autoSending')} tone="warning" />
-        ) : due ? (
+        {due ? (
           <Badge label={t('plans.toConfirm')} tone="warning" />
         ) : (
           <Text style={styles.heroLabel}>{t('plans.nextSend')}</Text>
@@ -159,17 +144,12 @@ export default function PaiementPlanifie() {
       <Card fill style={styles.details}>
         <Row label={t('plans.recipient')} value={recipientLabel} />
         <Row label={t('plans.frequency')} value={describeSchedule(plan)} />
-        <Row label={t('plans.mode')} value={plan.autoSend ? t('plans.modeAutoShort') : t('plans.modeConfirmShort')} />
         <Row label={t('plans.dueDate')} value={due ? t('plans.now') : formatShortDate(new Date(plan.nextDate))} last />
       </Card>
 
-      {error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : autoFailed ? (
-        <Text style={styles.error}>{t('plans.autoFailed')}</Text>
-      ) : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {recurring && due && !autoPending ? (
+      {recurring && due ? (
         <Button
           title={busy === 'skip' ? '…' : t('plans.skip')}
           variant="secondary"
@@ -192,18 +172,11 @@ export default function PaiementPlanifie() {
         />
       </View>
 
-      {autoPending ? (
-        <View style={styles.pending}>
-          <ActivityIndicator color={colors.navy} />
-          <Text style={styles.pendingText}>{t('plans.autoInProgress')}</Text>
-        </View>
-      ) : (
-        <PrimaryButton
-          title={busy === 'send' ? t('send.sending') : due ? t('plans.confirmSend') : t('plans.sendNow')}
-          icon={busy === 'send' ? <ActivityIndicator color={colors.navy} /> : undefined}
-          onPress={busy ? undefined : send}
-        />
-      )}
+      <PrimaryButton
+        title={busy === 'send' ? t('send.sending') : due ? t('plans.confirmSend') : t('plans.sendNow')}
+        icon={busy === 'send' ? <ActivityIndicator color={colors.navy} /> : undefined}
+        onPress={busy ? undefined : send}
+      />
     </Screen>
   );
 }
@@ -231,8 +204,6 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: fonts.inter400, fontSize: 15, color: colors.textSecondary },
   rowValue: { flexShrink: 1, fontFamily: fonts.inter600, fontSize: 15, color: colors.navy, textAlign: 'right' },
   error: { fontFamily: fonts.inter600, fontSize: 14, color: colors.dangerText, textAlign: 'center' },
-  pending: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 56 },
-  pendingText: { fontFamily: fonts.inter600, fontSize: 15, color: colors.navy },
   secondary: { flexDirection: 'row', gap: 10 },
   flex: { flex: 1 },
 });

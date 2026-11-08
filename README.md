@@ -40,7 +40,7 @@ Les 26 écrans sont dans [`zafy-maquette/ecrans/`](zafy-maquette/ecrans), et le 
 | Un faux agent demande ton code secret par téléphone ou par SMS. | Zafy ne demande jamais de code par téléphone. L'écran **Vérifier** repère les messages d'arnaque typiques. |
 | Tu paies un numéro sans savoir s'il a été signalé. | Avant chaque paiement, Zafy affiche **« Signalé par N personnes »** ou **« Aucun signalement »**, grâce aux signalements de la communauté sur Nostr. |
 | Tu recopies un long numéro en espérant ne pas te tromper. | Scanne une fois la **carte Zafy** d'un contact : son nom et son numéro s'affichent ensuite à chaque paiement, facture et ligne de l'historique. |
-| Le loyer et la tontine dépendent de ta mémoire. | **Paiements planifiés** avec un rappel à l'heure choisie, ou un envoi automatique. Les montants peuvent être fixés en FCFA. |
+| Le loyer et la tontine dépendent de ta mémoire. | **Paiements planifiés** avec un rappel à l'heure choisie : l'argent ne part qu'après ta confirmation. Les montants peuvent être fixés en FCFA. |
 
 **Portée (objectif de pilote, pas encore mesuré) :** un marché de Dakar, environ 50 commerçants, qui reçoivent chacun environ 20 paiements par semaine, soit environ 1 000 paiements par semaine vérifiés par les signalements de la communauté. La [section 8](#8-métriques-à-suivre) liste ce que nous mesurerons.
 
@@ -57,7 +57,7 @@ Les 26 écrans sont dans [`zafy-maquette/ecrans/`](zafy-maquette/ecrans), et le 
 | Signaler un escroc (numéro, compte Spark ou nœud Lightning) et voir les alertes de la communauté | ✅ Réel (Nostr, kind 1984, relais publics) |
 | Avertissement avant de payer un destinataire signalé ; bandeau si ton propre compte a été signalé | ✅ Réel |
 | Contacts ajoutés en scannant une carte Zafy ; noms des contacts affichés dans Envoyer, l'historique et les alertes | ✅ Réel (gardés sur le téléphone) |
-| Paiements planifiés avec rappels, envoi automatique facultatif, montants fixés en FCFA | ✅ Réel (notifications locales) |
+| Paiements planifiés avec rappels, envoi toujours confirmé, montants fixés en FCFA | ✅ Réel (notifications locales) |
 | Historique avec recherche, filtres, détails et suppression locale | ✅ Réel |
 | Affichage et saisie en FCFA, euro, dollar ou sats, avec les taux en direct | ✅ Réel (taux Breez, CoinGecko en secours) |
 | Français et anglais | ✅ Réel (i18next) |
@@ -158,7 +158,7 @@ flowchart LR
 | Faux signalements ou spam | Les signalements sont signés. Une personne ne compte qu'une fois par cible. Le compteur est un avertissement, il ne bloque rien. |
 | Téléphone volé | App verrouillée par un code à 4 chiffres (stocké sous forme d'empreinte SHA-256 salée) ou l'empreinte digitale. Les 12 mots ne s'affichent qu'après le code ou l'empreinte. |
 | Téléphone perdu | Le wallet se récupère entièrement avec les 12 mots sur un nouveau téléphone. |
-| Double paiement (automatique + manuel) | Un paiement est réservé pendant l'envoi et relu juste avant d'être envoyé. |
+| Double paiement | Le bouton est bloqué pendant l'envoi et l'échéance est relue juste avant d'envoyer. |
 
 **Réglages sûrs par défaut**
 - **Secrets :** les 12 mots et l'empreinte du code sont dans `expo-secure-store` (Android Keystore / iOS Keychain). Le code n'est jamais stocké en clair.

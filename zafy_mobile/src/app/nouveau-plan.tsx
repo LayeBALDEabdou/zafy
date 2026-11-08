@@ -39,8 +39,6 @@ import { formatShortDate } from '@/utils/date';
 const FREQUENCIES = ['once', 'weekly', 'monthly'] as const satisfies readonly Frequency[];
 const FREQUENCY_LABEL = { once: 'plans.freqOnce', weekly: 'plans.freqWeekly', monthly: 'plans.freqMonthly' } as const;
 
-const SEND_MODES = ['confirm', 'auto'] as const;
-
 const tomorrow = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
@@ -66,8 +64,6 @@ export default function NouveauPlan() {
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [date, setDate] = useState<Date>(tomorrow);
   const [time, setTime] = useState('09:00');
-  const [sendMode, setSendMode] = useState<(typeof SEND_MODES)[number]>('confirm');
-  const autoSend = sendMode === 'auto';
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +94,6 @@ export default function NouveauPlan() {
       setFrequency(plan.frequency);
       setDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
       setTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
-      setSendMode(plan.autoSend ? 'auto' : 'confirm');
     });
   }, [id]);
 
@@ -163,7 +158,6 @@ export default function NouveauPlan() {
         fiat: inputToFiat(amount),
         frequency,
         nextDate,
-        autoSend,
       };
       if (id) await updatePlan(id, input);
       else await createPlan(input);
@@ -265,25 +259,11 @@ export default function NouveauPlan() {
         <Text style={styles.summary}>{schedule}</Text>
       </Card>
 
-      <Card style={styles.section}>
-        <Label>{t('plans.sending')}</Label>
-        <ChoiceGroup
-          options={SEND_MODES}
-          value={sendMode}
-          onChange={setSendMode}
-          columns={2}
-          segmented
-          getLabel={(m) => (m === 'auto' ? t('plans.modeAuto') : t('plans.modeConfirm'))}
-        />
-        <View style={styles.note}>
-          <Icon name={autoSend ? 'bolt' : 'bell'} size={18} color={colors.successText} />
-          <Text style={styles.noteText}>
-            {autoSend
-              ? t('plans.autoNote')
-              : t('plans.confirmNote')}
-          </Text>
-        </View>
-      </Card>
+      {/* Jamais d'envoi sans l'utilisateur : un rappel, puis il confirme */}
+      <View style={styles.note}>
+        <Icon name="bell" size={18} color={colors.successText} />
+        <Text style={styles.noteText}>{t('plans.confirmNote')}</Text>
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <PrimaryButton

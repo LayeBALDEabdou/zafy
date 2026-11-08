@@ -26,8 +26,6 @@ export type Plan = {
   nextDate: string;
   /** Jour du mois choisi au départ (mensuel) : le 31 reste le 31 quand le mois le permet. */
   anchorDay: number;
-  /** Envoi sans confirmation dès l'échéance (wallet ouvert), sinon rappel à confirmer. */
-  autoSend?: boolean;
   notificationId?: string;
 };
 
@@ -119,17 +117,12 @@ async function scheduleReminder(plan: Plan) {
   const date = new Date(plan.nextDate);
   if (date.getTime() <= Date.now()) return undefined;
   return Notifications.scheduleNotificationAsync({
-    content: plan.autoSend
-      ? {
-          title: t('plans.reminderAutoTitle', { name: plan.name }),
-          body: t('plans.reminderAutoBody', { amount: planAmountLabel(plan) }),
-          data: { planId: plan.id },
-        }
-      : {
-          title: t('plans.reminderTitle', { name: plan.name }),
-          body: t('plans.reminderBody', { amount: planAmountLabel(plan) }),
-          data: { planId: plan.id },
-        },
+    // Rappel seulement : l'envoi est toujours confirmé par l'utilisateur
+    content: {
+      title: t('plans.reminderTitle', { name: plan.name }),
+      body: t('plans.reminderBody', { amount: planAmountLabel(plan) }),
+      data: { planId: plan.id },
+    },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date, channelId: CHANNELS.plans.id },
   });
 }
