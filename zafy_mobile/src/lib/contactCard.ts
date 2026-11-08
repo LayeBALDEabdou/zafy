@@ -32,3 +32,14 @@ export function parseContactCard(data: string): ContactCard | null {
   if (!name || !address) return null;
   return { name, address, phone: params.get('p')?.trim() || undefined };
 }
+
+// --- Lien court : « https://zafy.vercel.app/ajouter-contact/771234567 » ---
+// Le prénom et l'adresse sont retrouvés dans l'annuaire Zafy (l'utilisateur doit y être publié).
+
+const SHORT = /^(?:https:\/\/zafy\.vercel\.app|zafy:\/)\/ajouter-contact\/(\d{8,15})\/?$/i;
+
+/** Lien court de la carte, à partir du numéro du profil (« 771234567 »). */
+export const shortCardLink = (phone: string) => `${WEB_URL}${PATH}/${phone}`;
+
+/** Le numéro contenu dans un lien court de carte, sinon null. */
+export const parseShortCard = (data: string) => data.trim().match(SHORT)?.[1] ?? null;

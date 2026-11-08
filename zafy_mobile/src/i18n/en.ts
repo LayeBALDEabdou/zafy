@@ -144,6 +144,8 @@ export const en: Dictionary = {
     adding: "Adding…",
     update: "Update",
     add: "Add",
+    shortNone: "No Zafy account found for {{phone}}. Ask them for their Zafy card QR.",
+    shortContested: "Several accounts claim this number: adding is blocked to be safe. Ask them for their Zafy card QR.",
   },
   currency: {
     title: "Currency",

@@ -16,7 +16,9 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { useT } from '@/i18n';
 import { formatInput as formatInputFor, getCurrencyState, inputFromSats } from '@/lib/currency';
 import { describeDestination } from '@/lib/breez';
-import { parseContactCard } from '@/lib/contactCard';
+import { parseContactCard, parseShortCard } from '@/lib/contactCard';
+import { lookupPhone } from '@/lib/directory';
+import { normalizePhone } from '@/lib/phone';
 import { onContactPick } from '@/lib/contacts';
 import { ensureNotificationPermission } from '@/lib/notifications';
 import {
@@ -114,6 +116,18 @@ export default function NouveauPlan() {
   useEffect(
     () =>
       onScan((data) => {
+        // Lien court de carte : un paiement répété a besoin de l'adresse, on la cherche dans l'annuaire
+        const shortPhone = parseShortCard(data);
+        if (shortPhone) {
+          lookupPhone(normalizePhone(shortPhone))
+            .then((res) => {
+              if (res.status !== 'found') return;
+              setTo(res.profile.address);
+              setName((n) => n || res.profile.name);
+            })
+            .catch(() => {});
+          return;
+        }
         setTo(cleanDestination(data));
         // Carte Zafy : son prénom sert de nom au paiement si le champ est vide
         const card = parseContactCard(data);

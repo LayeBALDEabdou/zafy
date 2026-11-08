@@ -19,8 +19,10 @@ import { describeDestination, prepareSend, sendPrepared, type Destination } from
 import { confirmAction } from '@/lib/confirm';
 import { parseContactCard, type ContactCard } from '@/lib/contactCard';
 import { contactPhone, onContactPick } from '@/lib/contacts';
+import { formatInput as formatAmountInput, getCurrencyState, inputFromSats as satsToInput, toSats } from '@/lib/currency';
 import { lookupPhone, type PhoneLookup } from '@/lib/directory';
 import { formatTarget, reportsFor, resolveTarget } from '@/lib/nostr';
+import { parseShortPayment, readAmount, type ShortPayment } from '@/lib/paymentLink';
 import { parseZafyAddress } from '@/lib/phone';
 import { cleanDestination, onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
@@ -40,6 +42,15 @@ const ALIAS_ERROR = {
   error: 'send.zafyError',
 } as const;
 
+/** Montant demandé par un lien (dans la devise de celui qui demande) → texte du champ, dans la devise de l'utilisateur. */
+function requestedInput({ amount, currency: from }: Omit<ShortPayment, 'phone'>) {
+  const { currency } = getCurrencyState();
+  if (!amount || !from) return null;
+  return from === currency
+    ? formatAmountInput(String(amount).replace('.', ','), currency)
+    : satsToInput(toSats(amount, from), currency);
+}
+
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** Signalements Nostr du destinataire. `error` = relais injoignables : on ne sait pas, on ne rassure pas. */
@@ -58,10 +69,10 @@ export default function Envoyer() {
   const { currency, format, unit, decimals, inputToSats, formatInput, inputFromSats, inputHint, quickAmounts } =
     useCurrency();
   // Lien de paiement ouvert (« /payer ») : la facture arrive déjà remplie
-  const params = useLocalSearchParams<{ to?: string }>();
+  const params = useLocalSearchParams<{ to?: string; m?: string; c?: string }>();
   const [to, setTo] = useState(() => (params.to ? cleanDestination(params.to) : ''));
   /** Montant saisi dans la devise choisie (converti en sats pour l'envoi). */
-  const [amount, setAmount] = useState(quickAmounts[1]);
+  const [amount, setAmount] = useState(() => requestedInput(readAmount(params.m, params.c)) ?? quickAmounts[1]);
   /** Destination reconnue, avec le texte analysé (pour ignorer un résultat qui ne correspond plus au champ). */
   const [dest, setDest] = useState<(Destination & { input: string }) | null>(null);
   const [sending, setSending] = useState(false);
@@ -162,6 +173,10 @@ export default function Envoyer() {
     () =>
       onScan((data) => {
         setCard(parseContactCard(data));
+        // Lien court de paiement scanné : le montant demandé est pré-rempli
+        const requested = parseShortPayment(data);
+        const input = requested ? requestedInput(requested) : null;
+        if (input) setAmount(input);
         setTo(cleanDestination(data));
       }),
     [],

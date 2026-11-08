@@ -20,7 +20,7 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { LANGUAGES, useT } from '@/i18n';
 import { getSparkAddress } from '@/lib/breez';
 import { confirmAction } from '@/lib/confirm';
-import { contactCardLink } from '@/lib/contactCard';
+import { contactCardLink, shortCardLink } from '@/lib/contactCard';
 import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
@@ -68,7 +68,14 @@ export default function Profil() {
 
   const firstName = profile?.firstName ?? '';
   // Carte de contact : prénom, numéro et adresse, pour être ajouté à l'annuaire de l'autre sans rien écrire
-  const cardLink = address && profile ? contactCardLink({ name: firstName, phone: profile.phone, address }) : null;
+  // Publié dans l'annuaire : lien court avec le seul numéro ; sinon tout est dans le lien
+  const cardLink = !profile
+    ? null
+    : discoverable && directory === 'synced'
+      ? shortCardLink(profile.phone)
+      : address
+        ? contactCardLink({ name: firstName, phone: profile.phone, address })
+        : null;
   const shareCard = () => cardLink && Share.share({ message: t('profile.shareCardMessage', { link: cardLink }) });
 
   return (

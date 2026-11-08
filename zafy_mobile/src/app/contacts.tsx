@@ -9,7 +9,7 @@ import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SwipeToDelete } from '@/components/SwipeToDelete';
 import { useT } from '@/i18n';
-import { parseContactCard } from '@/lib/contactCard';
+import { parseContactCard, parseShortCard } from '@/lib/contactCard';
 import { contactSubtitle, deleteContact, emitContactPick, loadContacts, type Contact } from '@/lib/contacts';
 import { onScan } from '@/lib/scan';
 import { colors, fonts } from '@/theme';
@@ -26,6 +26,13 @@ export default function Contacts() {
   useEffect(
     () =>
       onScan((data) => {
+        // Lien court : prénom et adresse retrouvés dans l'annuaire Zafy
+        const shortPhone = parseShortCard(data);
+        if (shortPhone) {
+          setScanError(null);
+          router.push({ pathname: '/ajouter-contact/[phone]', params: { phone: shortPhone } });
+          return;
+        }
         const card = parseContactCard(data);
         if (!card) {
           setScanError(t('contacts.notCard'));

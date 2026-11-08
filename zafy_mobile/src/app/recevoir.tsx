@@ -10,12 +10,12 @@ import { Icon } from '@/components/Icon';
 import { QR_SIZE, QrCode } from '@/components/QrCode';
 import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { formatNumber } from '@/data/mock';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
 import { createSparkInvoice } from '@/lib/breez';
-import { paymentLink } from '@/lib/paymentLink';
+import { formatValue, parseInput } from '@/lib/currency';
+import { paymentLink, shortPaymentLink } from '@/lib/paymentLink';
 import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
 
@@ -25,8 +25,8 @@ import { colors, fonts } from '@/theme';
  */
 export default function Recevoir() {
   const { t } = useT();
-  const { profile } = useWallet();
-  const { unit, decimals, inputToSats, formatInput, inputHint, quickAmounts } = useCurrency();
+  const { profile, directory } = useWallet();
+  const { currency, format, unit, decimals, inputToSats, formatInput, inputHint, quickAmounts } = useCurrency();
   /** Montant demandé, saisi dans la devise choisie (vide ou 0 = le payeur choisit). */
   const [amount, setAmount] = useState(quickAmounts[1]);
   const [request, setRequest] = useState<string | null>(null);
@@ -62,15 +62,25 @@ export default function Recevoir() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const share = () =>
-    request &&
+  const share = () => {
+    if (!request) return;
+    // Le montant tel qu'il a été saisi, dans la devise choisie (« 5 000 FCFA », « 10,00 € »)
+    const amountText = sats <= 0 ? '' : currency === 'SAT' ? format(sats) : formatValue(parseInput(amount, currency), currency);
     Share.share({
       message: t('receive.shareMessage', {
-        amount: sats > 0 ? `${formatNumber(sats)} sats ` : '',
+        amount: amountText ? `${amountText} ` : '',
         // Lien https cliquable dans WhatsApp / SMS : il ouvre Zafy sur Envoyer avec la facture
-        link: paymentLink({ invoice: request, name: firstName, sats }),
+        // Publié dans l'annuaire : lien court (numéro + montant) ; sinon le lien contient la facture
+        link:
+          profile && address && directory === 'synced'
+            ? shortPaymentLink({
+                phone: profile.phone,
+                ...(sats > 0 && currency !== 'SAT' ? { amount: parseInput(amount, currency), currency } : {}),
+              })
+            : paymentLink({ invoice: request, name: firstName, amount: amountText || undefined }),
       }),
     });
+  };
 
   return (
     <Screen header={<ScreenHeader title={t('receive.title')} />}>

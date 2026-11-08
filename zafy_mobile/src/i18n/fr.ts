@@ -142,6 +142,8 @@ export const fr = {
     adding: "Ajout…",
     update: "Mettre à jour",
     add: "Ajouter",
+    shortNone: "Aucun compte Zafy trouvé pour {{phone}}. Demande-lui sa carte Zafy en QR.",
+    shortContested: "Plusieurs comptes revendiquent ce numéro : ajout bloqué par prudence. Demande-lui sa carte Zafy en QR.",
   },
   currency: {
     title: "Devise",

@@ -11,15 +11,14 @@ import { colors } from '@/theme';
  * Rien n'est payé sans confirmation : l'utilisateur voit le montant, le destinataire et les signalements.
  */
 export default function Payer() {
-  const { r: invoice = '', n: name, s } = useLocalSearchParams<{ r?: string; n?: string; s?: string }>();
+  const { r: invoice = '', n: name, m: amount } = useLocalSearchParams<{ r?: string; n?: string; m?: string }>();
   const { profile, status } = useWallet();
 
   // Pas de compte sur ce téléphone, ou lien abîmé : écran d'accueil
   if (profile === null || !invoice) return <Redirect href="/" />;
   // App verrouillée : déverrouiller d'abord, puis revenir ici
   if (status === 'locked' && profile) {
-    const sats = Number(s) || undefined;
-    return <Redirect href={{ pathname: '/connexion', params: { next: paymentPath({ invoice, name, sats }) } }} />;
+    return <Redirect href={{ pathname: '/connexion', params: { next: paymentPath({ invoice, name, amount }) } }} />;
   }
   if (status === 'ready') return <Redirect href={{ pathname: '/envoyer', params: { to: invoice } }} />;
   return (

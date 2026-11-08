@@ -1,5 +1,6 @@
-import { parseContactCard } from '@/lib/contactCard';
-import { parsePaymentLink } from '@/lib/paymentLink';
+import { parseContactCard, parseShortCard } from '@/lib/contactCard';
+import { parsePaymentLink, parseShortPayment } from '@/lib/paymentLink';
+import { zafyAddress } from '@/lib/phone';
 
 // Transmet le résultat du scanner à l'écran qui l'a ouvert.
 type Listener = (value: string) => void;
@@ -23,12 +24,15 @@ export const emitScan = (value: string) => listeners.at(-1)?.(value);
  * - « bitcoin:adresse?lightning=lnbc…&spark=spark1… » (QR unifié BIP21) → la facture Spark si présente
  *   (Zafy y lit l'identité de celui qui reçoit), sinon la facture Lightning, sinon l'adresse ;
  * - carte de contact Zafy → son adresse ;
- * - lien de paiement Zafy (« https://zafy.vercel.app/payer?r=… ») → sa facture.
+ * - lien de paiement Zafy (« https://zafy.vercel.app/payer?r=… ») → sa facture ;
+ * - lien court de carte ou de paiement (« …/ajouter-contact/771234567 », « …/payer/771234567 ») → « 771234567@zafy ».
  */
 export function cleanDestination(raw: string) {
   const value = raw.trim();
   const card = parseContactCard(value);
   if (card) return card.address;
+  const shortPhone = parseShortCard(value) ?? parseShortPayment(value)?.phone;
+  if (shortPhone) return zafyAddress(shortPhone);
   const linked = parsePaymentLink(value);
   if (linked) return cleanDestination(linked);
   const [scheme, rest] = value.includes(':') ? [value.slice(0, value.indexOf(':')).toLowerCase(), value.slice(value.indexOf(':') + 1)] : ['', value];
