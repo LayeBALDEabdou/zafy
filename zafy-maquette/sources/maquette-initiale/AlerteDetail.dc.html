@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Zafy · Détail d'une alerte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#157A73}a:hover{color:#13213A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #EEF3F8; color: #13213A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 24px 20px 36px">
+
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="Alertes.dc.html" aria-label="Retour" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#13213A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</a>
+<h1 style="margin: 0; font-family: Sora, sans-serif; font-size: 20px; font-weight: 700">Alerte</h1>
+</div>
+
+<div style="position: relative; overflow: hidden; background: #13213A; border-radius: 24px; padding: 24px; height: 190px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; flex-shrink: 0">
+<div aria-hidden="true" style="position: absolute; right: -50px; top: -60px; width: 190px; height: 190px; border-radius: 95px; background: #6EDDD6"></div>
+<div aria-hidden="true" style="position: absolute; right: 50px; bottom: -80px; width: 150px; height: 150px; border-radius: 75px; background: #1E3256"></div>
+<span style="position: relative; align-self: flex-start; font-size: 13px; font-weight: 700; color: #13213A; background: #FF9F7A; border-radius: 10px; padding: 6px 12px">Faux agent Wave</span>
+<span style="position: relative; display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: Sora, sans-serif; font-size: 28px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.5px">+221 77 412 08 12</span>
+<span style="font-size: 15px; color: #C3CEDD">Signalé 23 fois</span>
+</span>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0">
+<h2 style="margin: 0; font-family: Sora, sans-serif; font-size: 16px; font-weight: 700">Ce qu'il fait</h2>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<span style="font-size: 13px; font-weight: 600; color: #B4232A; background: #FDE8E8; border-radius: 14px; padding: 7px 12px">Appelle au nom de Wave</span>
+<span style="font-size: 13px; font-weight: 600; color: #B4232A; background: #FDE8E8; border-radius: 14px; padding: 7px 12px">Demande ton code</span>
+<span style="font-size: 13px; font-weight: 600; color: #B4232A; background: #FDE8E8; border-radius: 14px; padding: 7px 12px">Menace de bloquer</span>
+</div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 6px 20px; display: flex; flex-direction: column; justify-content: space-around; flex-grow: 1; min-height: 0">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px"><span style="color: #5B6B82">Dernier signalement</span><span style="font-weight: 600">il y a 12 min</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px"><span style="color: #5B6B82">Premier signalement</span><span style="font-weight: 600">28 oct.</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px"><span style="color: #5B6B82">Source</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #157A73; background: #DDF7F5; border-radius: 14px; padding: 6px 10px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#157A73" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>23 signatures Nostr</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex-shrink: 0">
+<button style="height: 56px; border: none; border-radius: 18px; background: #FFFFFF; color: #13213A; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600">Bloquer</button>
+<button style="height: 56px; border: none; border-radius: 18px; background: #6EDDD6; color: #13213A; font-family: Sora, sans-serif; font-size: 15px; font-weight: 700">Moi aussi</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

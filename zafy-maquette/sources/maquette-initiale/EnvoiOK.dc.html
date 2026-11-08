@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Zafy · Envoi réussi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#157A73}a:hover{color:#13213A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #EEF3F8; color: #13213A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 24px 20px 36px">
+
+<div style="position: relative; overflow: hidden; background: #13213A; border-radius: 28px; padding: 32px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; flex-grow: 1; min-height: 0">
+<div aria-hidden="true" style="position: absolute; right: -60px; top: -60px; width: 190px; height: 190px; border-radius: 95px; background: #6EDDD6"></div>
+<div aria-hidden="true" style="position: absolute; left: -50px; bottom: -60px; width: 160px; height: 160px; border-radius: 80px; background: #1E3256"></div>
+<span role="img" aria-label="Envoi réussi" style="position: relative; width: 96px; height: 96px; border-radius: 48px; background: #6EDDD6; display: flex; align-items: center; justify-content: center">
+<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#13213A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</span>
+<h1 style="position: relative; margin: 0; font-family: Sora, sans-serif; font-size: 28px; font-weight: 700; color: #FFFFFF">Envoyé !</h1>
+<span style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px">
+<span style="font-family: Sora, sans-serif; font-size: 36px; font-weight: 700; color: #FFFFFF; letter-spacing: -1px">5 000 sats</span>
+<span style="font-size: 15px; color: #C3CEDD">à awa@zafy.app</span>
+</span>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 6px 20px; display: flex; flex-direction: column; flex-shrink: 0">
+<div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #EEF3F8; font-size: 15px"><span style="color: #5B6B82">En FCFA</span><span style="font-weight: 600">≈ 1 800</span></div>
+<div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #EEF3F8; font-size: 15px"><span style="color: #5B6B82">Frais</span><span style="font-weight: 600">1 sat</span></div>
+<div style="display: flex; justify-content: space-between; padding: 12px 0; font-size: 15px"><span style="color: #5B6B82">Durée</span><span style="font-weight: 600">1 seconde</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex-shrink: 0">
+<button style="height: 56px; border: none; border-radius: 18px; background: #FFFFFF; color: #13213A; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600">Reçu</button>
+<a href="Accueil.dc.html" style="height: 56px; border-radius: 18px; background: #6EDDD6; color: #13213A; font-family: Sora, sans-serif; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">Terminé</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
