@@ -195,7 +195,12 @@ export default function Profil() {
             </View>
           }
         />
-        <Row icon="lock" label={t('profile.securityCode')} right={<Icon name="chevronRight" size={18} color={colors.textSecondary} />} />
+        <Row
+          icon="lock"
+          label={t('profile.securityCode')}
+          onPress={() => router.push('/securite')}
+          right={<Icon name="chevronRight" size={18} color={colors.textSecondary} />}
+        />
         <Row
           icon="bell"
           label={t('profile.scamAlerts')}

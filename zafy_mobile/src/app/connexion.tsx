@@ -8,7 +8,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useBiometricUnlock } from '@/hooks/useBiometricUnlock';
 import { useT } from '@/i18n';
-import { checkPin, firstNameOf } from '@/lib/account';
+import { firstNameOf, pinError, verifyPin } from '@/lib/account';
 import { colors, fonts } from '@/theme';
 
 /** C — Connexion (déverrouillage par code ou empreinte) */
@@ -54,11 +54,9 @@ export default function Connexion() {
     const next = pin + d;
     setPin(next);
     if (next.length < 4) return;
-    if (await checkPin(next)) {
-      await openWallet();
-    } else {
-      setError(t('common.wrongPin'));
-    }
+    const check = await verifyPin(next);
+    if (check.ok) await openWallet();
+    else setError(pinError(check));
     setPin('');
   };
 

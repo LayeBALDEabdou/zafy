@@ -2,7 +2,10 @@ import { t } from '@/i18n';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useState } from 'react';
 
-type Availability = 'checking' | 'available' | 'no_hardware' | 'not_enrolled';
+import { loadBiometricEnabled } from '@/lib/account';
+
+/** `disabled` : le téléphone le permet, mais l'utilisateur l'a désactivé (Profil → Code et sécurité). */
+type Availability = 'checking' | 'available' | 'disabled' | 'no_hardware' | 'not_enrolled';
 
 const ERRORS = {
   lockout: 'errors.bioLockout',
@@ -23,7 +26,7 @@ export function useBiometricUnlock() {
     (async () => {
       if (!(await LocalAuthentication.hasHardwareAsync())) return setAvailability('no_hardware');
       if (!(await LocalAuthentication.isEnrolledAsync())) return setAvailability('not_enrolled');
-      setAvailability('available');
+      setAvailability((await loadBiometricEnabled()) ? 'available' : 'disabled');
     })();
   }, []);
 
@@ -31,6 +34,7 @@ export function useBiometricUnlock() {
   const authenticate = useCallback(async (): Promise<true | string | null> => {
     if (availability === 'no_hardware') return t(ERRORS.not_available);
     if (availability === 'not_enrolled') return t(ERRORS.not_enrolled);
+    if (availability === 'disabled') return t('security.bioOff');
 
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: t('errors.bioPrompt'),

@@ -11,7 +11,7 @@ import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useBiometricUnlock } from '@/hooks/useBiometricUnlock';
 import { useT } from '@/i18n';
-import { checkPin, loadMnemonic } from '@/lib/account';
+import { loadMnemonic, pinError, verifyPin } from '@/lib/account';
 import { colors, fonts } from '@/theme';
 
 const WARNINGS = ['keys.tip1', 'keys.tip2', 'keys.tip3'] as const;
@@ -35,8 +35,9 @@ export default function Cles() {
     setPin(value);
     setError(null);
     if (value.length < 4) return;
-    if (await checkPin(value)) await show();
-    else setError(t('common.wrongPin'));
+    const check = await verifyPin(value);
+    if (check.ok) await show();
+    else setError(pinError(check));
     setPin('');
   };
 

@@ -3,11 +3,17 @@ import { wordlist } from '@scure/bip39/wordlists/english.js';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 
+import { t } from '@/i18n';
+
 // Tout reste sur le téléphone, chiffré par le système (Keychain iOS / Keystore Android).
 const KEYS = {
   profile: 'zafy.profile',
   mnemonic: 'zafy.mnemonic',
   pin: 'zafy.pin',
+  /** Codes faux consécutifs et fin du blocage en cours. */
+  pinAttempts: 'zafy.pin.attempts',
+  /** « off » : déverrouillage par empreinte désactivé par l'utilisateur. */
+  biometric: 'zafy.biometric',
 } as const;
 
 export type Profile = {
@@ -34,10 +40,16 @@ async function hashPin(pin: string, salt: string) {
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, `${salt}:${pin}`);
 }
 
-export async function createAccount(profile: Profile, pin: string, mnemonic: string) {
+/** Enregistre l'empreinte salée d'un nouveau code (jamais le code lui-même). */
+async function storePin(pin: string) {
   const salt = Array.from(Crypto.getRandomBytes(16), (b) => b.toString(16).padStart(2, '0')).join('');
-  await SecureStore.setItemAsync(KEYS.mnemonic, mnemonic);
   await SecureStore.setItemAsync(KEYS.pin, JSON.stringify({ salt, hash: await hashPin(pin, salt) }));
+}
+
+export async function createAccount(profile: Profile, pin: string, mnemonic: string) {
+  await SecureStore.setItemAsync(KEYS.mnemonic, mnemonic);
+  await storePin(pin);
+  await SecureStore.deleteItemAsync(KEYS.pinAttempts);
   await SecureStore.setItemAsync(KEYS.profile, JSON.stringify(profile));
 }
 
@@ -74,12 +86,90 @@ export async function saveProfile(profile: Profile) {
   await SecureStore.setItemAsync(KEYS.profile, JSON.stringify(profile));
 }
 
-export async function checkPin(pin: string) {
+async function matchesPin(pin: string) {
   const raw = await SecureStore.getItemAsync(KEYS.pin);
   if (!raw) return false;
   const { salt, hash } = JSON.parse(raw) as { salt: string; hash: string };
   return (await hashPin(pin, salt)) === hash;
 }
+
+// --- Protection du code contre les essais en série ---
+
+/** Codes faux autorisés avant le premier blocage. */
+const FREE_ATTEMPTS = 5;
+const FIRST_LOCK_S = 30;
+const MAX_LOCK_S = 15 * 60;
+
+type Attempts = { fails: number; until: number };
+
+async function loadAttempts(): Promise<Attempts> {
+  try {
+    const raw = await SecureStore.getItemAsync(KEYS.pinAttempts);
+    return raw ? (JSON.parse(raw) as Attempts) : { fails: 0, until: 0 };
+  } catch {
+    return { fails: 0, until: 0 };
+  }
+}
+
+/**
+ * `ok` : bon code. Sinon `lockedFor` (secondes) si les essais sont bloqués,
+ * ou `left` = essais restants avant le prochain blocage.
+ */
+export type PinCheck = { ok: true } | { ok: false; lockedFor: number } | { ok: false; left: number };
+
+/**
+ * Vérifie le code, avec blocage après 5 codes faux : 30 s, puis le double à chaque nouvel échec (15 min au plus).
+ * Le compteur est gardé dans le stockage sécurisé : fermer l'app ne le remet pas à zéro.
+ */
+export async function verifyPin(pin: string): Promise<PinCheck> {
+  const attempts = await loadAttempts();
+  const now = Date.now();
+  if (attempts.until > now) return { ok: false, lockedFor: Math.ceil((attempts.until - now) / 1000) };
+  if (await matchesPin(pin)) {
+    await SecureStore.deleteItemAsync(KEYS.pinAttempts);
+    return { ok: true };
+  }
+  const fails = attempts.fails + 1;
+  const extra = fails - FREE_ATTEMPTS;
+  const lockS = extra >= 0 ? Math.min(FIRST_LOCK_S * 2 ** extra, MAX_LOCK_S) : 0;
+  await SecureStore.setItemAsync(KEYS.pinAttempts, JSON.stringify({ fails, until: lockS ? now + lockS * 1000 : 0 }));
+  return lockS ? { ok: false, lockedFor: lockS } : { ok: false, left: FREE_ATTEMPTS - fails };
+}
+
+/** Message à afficher après un code refusé (null si le code était bon). */
+export function pinError(check: PinCheck) {
+  if (check.ok) return null;
+  if ('lockedFor' in check) {
+    const s = check.lockedFor;
+    return s >= 60
+      ? t('security.lockedMinutes', { n: Math.ceil(s / 60) })
+      : t('security.lockedSeconds', { n: s });
+  }
+  return check.left <= 3 ? t('security.wrongPinLeft', { n: check.left }) : t('common.wrongPin');
+}
+
+/** Code trop facile à deviner : 4 chiffres identiques (1111) ou qui se suivent (1234, 9876). */
+export function isWeakPin(pin: string) {
+  if (/^(\d)\1{3}$/.test(pin)) return true;
+  const d = [...pin].map(Number);
+  const steps = d.slice(1).map((n, i) => n - d[i]);
+  return steps.every((s) => s === 1) || steps.every((s) => s === -1);
+}
+
+/** Change le code : l'ancien doit être bon (mêmes règles de blocage que le déverrouillage). */
+export async function changePin(current: string, next: string): Promise<PinCheck> {
+  const check = await verifyPin(current);
+  if (check.ok) await storePin(next);
+  return check;
+}
+
+// --- Empreinte ---
+
+/** Déverrouillage par empreinte autorisé par l'utilisateur (oui par défaut). */
+export const loadBiometricEnabled = async () => (await SecureStore.getItemAsync(KEYS.biometric)) !== 'off';
+
+export const saveBiometricEnabled = (enabled: boolean) =>
+  enabled ? SecureStore.deleteItemAsync(KEYS.biometric) : SecureStore.setItemAsync(KEYS.biometric, 'off');
 
 export const loadMnemonic = () => SecureStore.getItemAsync(KEYS.mnemonic);
 
