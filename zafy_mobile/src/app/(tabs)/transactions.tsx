@@ -6,9 +6,8 @@ import { useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Badge } from '@/components/Badge';
 import { DateRangePicker, type DateRange } from '@/components/DateRangePicker';
-import { Chip, FilterChips } from '@/components/FilterChips';
+import { ChoiceGroup } from '@/components/Form';
 import { Icon } from '@/components/Icon';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
@@ -16,20 +15,12 @@ import { useContacts } from '@/hooks/useContacts';
 import { type Transaction } from '@/data/mock';
 import { useCurrency } from '@/hooks/useCurrency';
 import { t, useT } from '@/i18n';
-import { contactPhone, type Contact } from '@/lib/contacts';
+import type { Contact } from '@/lib/contacts';
 import { colors, fonts, spacing } from '@/theme';
-import { daysAgo, endOfDay, formatDay, formatShortDate, formatTime, isSameDay, startOfDay } from '@/utils/date';
+import { endOfDay, formatDay, formatShortDate, formatTime, isSameDay, startOfDay } from '@/utils/date';
 import { txNote, txTitle } from '@/utils/transaction';
 
 const TYPES = ['all', 'received', 'sent'] as const;
-const PERIODS = ['anyTime', 'today', 'days7', 'days30'] as const;
-
-const MAX_DAYS: Record<(typeof PERIODS)[number], number> = {
-  anyTime: Infinity,
-  today: 0,
-  days7: 6,
-  days30: 29,
-};
 
 /** Minuscules sans accents, pour une recherche tolérante (« medina » trouve « Médina »). */
 const normalize = (s: string) =>
@@ -49,7 +40,11 @@ function groupByDay(list: Transaction[]) {
   return sections;
 }
 
-/** Historique complet : recherche, filtre reçues / envoyées et par période. */
+/**
+ * Historique complet, volontairement simple :
+ * une recherche (avec un bouton calendrier pour choisir des dates), un choix Toutes / Reçues / Envoyées,
+ * le total de ce qui est affiché, puis la liste par jour.
+ */
 export default function Transactions() {
   // Réaffiche l'écran quand la langue change (et la liste, via extraData)
   const { language } = useT();
@@ -58,8 +53,7 @@ export default function Transactions() {
   const { format } = useCurrency();
   const [query, setQuery] = useState('');
   const [type, setType] = useState<(typeof TYPES)[number]>('all');
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]>('anyTime');
-  // Plage du calendrier : remplace la période quand elle est définie.
+  /** Dates choisies dans le calendrier ; `null` = toutes les dates. */
   const [range, setRange] = useState<DateRange | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -68,9 +62,7 @@ export default function Transactions() {
   const filtered = transactions.filter((tx) => {
     if (type === 'received' && tx.amount < 0) return false;
     if (type === 'sent' && tx.amount > 0) return false;
-    if (range) {
-      if (tx.date < startOfDay(range.start) || tx.date > endOfDay(range.end)) return false;
-    } else if (daysAgo(tx.date) > MAX_DAYS[period]) return false;
+    if (range && (tx.date < startOfDay(range.start) || tx.date > endOfDay(range.end))) return false;
     if (!q) return true;
     const contact = find(tx.counterparty);
     return (
@@ -84,6 +76,7 @@ export default function Transactions() {
 
   const received = filtered.reduce((sum, tx) => (tx.amount > 0 ? sum + tx.amount : sum), 0);
   const sent = filtered.reduce((sum, tx) => (tx.amount < 0 ? sum - tx.amount : sum), 0);
+  const filtering = !!q || type !== 'all' || !!range;
 
   const header = (
     <View style={styles.header}>
@@ -105,39 +98,41 @@ export default function Transactions() {
             <Icon name="close" size={18} color={colors.textSecondary} />
           </Pressable>
         ) : null}
+        <Pressable
+          onPress={() => setCalendarOpen(true)}
+          accessibilityLabel={t('history.dates')}
+          hitSlop={8}
+          style={[styles.calendar, range && styles.calendarActive]}>
+          <Icon name="calendar" size={18} color={range ? colors.turquoise : colors.navy} />
+        </Pressable>
       </View>
 
-      <View style={styles.filters}>
-        <FilterChips options={TYPES} value={type} onChange={setType} getLabel={(o) => t(`history.${o}`)} />
-        <FilterChips
-          options={PERIODS}
-          getLabel={(o) => t(`history.${o}`)}
-          value={range ? null : period}
-          onChange={(p) => {
-            setRange(null);
-            setPeriod(p);
-          }}
-          leading={
-            <Chip
-              label={rangeLabel(range)}
-              active={!!range}
-              onPress={() => setCalendarOpen(true)}
-              icon={<Icon name="calendar" size={16} color={range ? colors.turquoise : colors.navy} />}
-            />
-          }
-        />
-      </View>
+      <ChoiceGroup
+        options={TYPES}
+        value={type}
+        onChange={setType}
+        columns={3}
+        segmented
+        style={styles.types}
+        getLabel={(o) => t(`history.${o}`)}
+      />
 
-      <View style={styles.summary}>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>{t('history.totalReceived')}</Text>
-          <Text style={[styles.statValue, { color: colors.successText }]}>+{format(received)}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>{t('history.totalSent')}</Text>
-          <Text style={[styles.statValue, { color: colors.dangerText }]}>−{format(sent)}</Text>
-        </View>
-      </View>
+      {/* Dates choisies : rappelées ici, avec une croix pour revenir à toutes les dates */}
+      {range ? (
+        <Pressable onPress={() => setRange(null)} style={styles.range} accessibilityLabel={t('history.clearDates')}>
+          <Icon name="calendar" size={14} color={colors.navy} />
+          <Text style={styles.rangeText}>{rangeLabel(range)}</Text>
+          <Icon name="close" size={14} color={colors.navy} />
+        </Pressable>
+      ) : null}
+
+      {filtered.length > 0 ? (
+        <Text style={styles.summary}>
+          <Text style={{ color: colors.successText }}>+{format(received)}</Text>
+          <Text>{'   ·   '}</Text>
+          <Text style={{ color: colors.dangerText }}>−{format(sent)}</Text>
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -168,7 +163,7 @@ export default function Transactions() {
           <View style={styles.empty}>
             <Icon name="search" size={28} color={colors.textSecondary} />
             <Text style={styles.emptyTitle}>{t('history.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{t('history.emptyText')}</Text>
+            <Text style={styles.emptyText}>{filtering ? t('history.emptyText') : t('history.emptyNone')}</Text>
           </View>
         }
       />
@@ -186,8 +181,7 @@ export default function Transactions() {
   );
 }
 
-function rangeLabel(range: DateRange | null) {
-  if (!range) return t('history.dates');
+function rangeLabel(range: DateRange) {
   if (isSameDay(range.start, range.end)) return formatShortDate(range.start);
   return `${formatShortDate(range.start)} → ${formatShortDate(range.end)}`;
 }
@@ -202,13 +196,13 @@ function TransactionRow({
   tx: Transaction;
   /** Montant déjà mis en forme dans la devise choisie. */
   amount: string;
-  /** Destinataire reconnu dans l'annuaire : son nom et son numéro remplacent le type de paiement. */
+  /** Destinataire reconnu dans l'annuaire : son nom remplace le type de paiement. */
   contact: Contact | null;
   first: boolean;
   last: boolean;
 }) {
   const inbound = tx.amount > 0;
-  const phone = contact ? contactPhone(contact) : null;
+  const note = txNote(tx);
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/transaction/[id]', params: { id: tx.id } })}
@@ -238,15 +232,13 @@ function TransactionRow({
           {contact?.name ?? txTitle(tx)}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {formatTime(tx.date)}
-          {phone ? ` · ${phone}` : ''}
-          {txNote(tx) ? ` · ${txNote(tx)}` : ''}
+          {note ? `${formatTime(tx.date)} · ${note}` : formatTime(tx.date)}
         </Text>
       </View>
-      <Badge
-        label={`${inbound ? '+' : '−'}${amount}`}
-        tone={inbound ? 'success' : 'danger'}
-      />
+      <Text style={[styles.amount, { color: inbound ? colors.successText : colors.navy }]} numberOfLines={1}>
+        {inbound ? '+' : '−'}
+        {amount}
+      </Text>
     </Pressable>
   );
 }
@@ -258,7 +250,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenX,
     paddingBottom: spacing.screenTop,
   },
-  header: { gap: 16 },
+  header: { gap: 12 },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,11 +269,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     padding: 0,
   },
-  filters: { gap: 8 },
-  summary: { flexDirection: 'row', gap: 10 },
-  stat: { flex: 1, backgroundColor: colors.white, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 2 },
-  statLabel: { fontFamily: fonts.inter500, fontSize: 13, color: colors.textSecondary },
-  statValue: { fontFamily: fonts.sora700, fontSize: 18 },
+  calendar: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  calendarActive: { backgroundColor: colors.navy },
+  types: { backgroundColor: colors.white },
+  range: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: colors.white,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  rangeText: { fontFamily: fonts.inter600, fontSize: 13, color: colors.navy },
+  summary: { fontFamily: fonts.inter600, fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingTop: 4 },
   day: {
     fontFamily: fonts.sora700,
     fontSize: 15,
@@ -306,6 +315,7 @@ const styles = StyleSheet.create({
   rowBody: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.inter600, fontSize: 15, color: colors.navy },
   meta: { fontFamily: fonts.inter400, fontSize: 13, color: colors.textSecondary },
+  amount: { fontFamily: fonts.inter600, fontSize: 15, flexShrink: 0 },
   empty: {
     marginTop: 24,
     backgroundColor: colors.white,
