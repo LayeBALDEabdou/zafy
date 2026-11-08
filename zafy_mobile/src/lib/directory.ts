@@ -72,7 +72,7 @@ async function publishProfile(profile: Profile) {
       ['i', `phonehash:${hash}`],
       ['i', `sparkid:${identity}`],
     ],
-    content: JSON.stringify({ v: 1, name: profile.firstName.slice(0, MAX_NAME), address, identity, proof: signature }),
+    content: JSON.stringify({ v: 1, name: profile.name.slice(0, MAX_NAME), address, identity, proof: signature }),
   });
 }
 
@@ -116,7 +116,7 @@ export async function syncPublicProfile(profile: Profile) {
   const discoverable = profile.discoverable !== false;
   const pubkey = await myPubkey();
   const fingerprint = JSON.stringify(
-    discoverable ? [pubkey, profile.firstName, profile.phone] : [pubkey, 'hidden'],
+    discoverable ? [pubkey, profile.name, profile.phone] : [pubkey, 'hidden'],
   );
   const last = await lastPublished();
   if (last?.fingerprint === fingerprint && (!discoverable || Date.now() - last.at < REFRESH_MS)) return;

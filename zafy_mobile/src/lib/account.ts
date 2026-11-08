@@ -11,7 +11,8 @@ const KEYS = {
 } as const;
 
 export type Profile = {
-  firstName: string;
+  /** Nom complet : prénom et nom (« Fatou Diop »). */
+  name: string;
   /** 9 chiffres, sans indicatif (ex. 771234567). */
   phone: string;
   /**
@@ -42,8 +43,31 @@ export async function createAccount(profile: Profile, pin: string, mnemonic: str
 
 export async function loadProfile(): Promise<Profile | null> {
   const raw = await SecureStore.getItemAsync(KEYS.profile);
-  return raw ? (JSON.parse(raw) as Profile) : null;
+  if (!raw) return null;
+  // Anciens comptes : seulement un prénom (« firstName »)
+  const { firstName, ...profile } = JSON.parse(raw) as Partial<Profile> & { firstName?: string };
+  return { ...profile, name: profile.name ?? firstName ?? '', phone: profile.phone ?? '' } as Profile;
 }
+
+// --- Saisie du profil ---
+
+/** Longueur maximale du nom complet. */
+export const MAX_NAME_LENGTH = 60;
+
+/** Espaces en trop retirés : «  fatou   diop » → « fatou diop ». */
+export const cleanName = (name: string) => name.trim().replace(/\s+/g, ' ');
+
+/** Prénom et nom : au moins deux mots, uniquement des lettres (avec tiret ou apostrophe). */
+export function isFullName(name: string) {
+  const value = cleanName(name);
+  return value.length <= MAX_NAME_LENGTH && /^\p{L}[\p{L}'’-]*(?: \p{L}[\p{L}'’-]*)+$/u.test(value);
+}
+
+/** Le prénom (premier mot du nom complet), pour saluer. */
+export const firstNameOf = (name: string) => cleanName(name).split(' ')[0] ?? '';
+
+/** Numéro sénégalais : exactement 9 chiffres, sans indicatif ni espace. */
+export const isValidPhone = (phone: string) => /^\d{9}$/.test(phone);
 
 /** Prénom et numéro modifiés depuis le Profil (les clés et le code ne changent pas). */
 export async function saveProfile(profile: Profile) {

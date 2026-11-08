@@ -5,14 +5,15 @@ import { ActivityIndicator, StyleSheet, Text, View, type TextInputInstance } fro
 import { Badge } from '@/components/Badge';
 import { PrimaryButton } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Input, Label, TextArea } from '@/components/Form';
+import { Label, TextArea } from '@/components/Form';
 import { Icon } from '@/components/Icon';
 import { PinInput } from '@/components/PinInput';
 import { Screen } from '@/components/Screen';
+import { ProfileFields } from '@/components/ProfileFields';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
-import { isValidMnemonic } from '@/lib/account';
+import { cleanName, isFullName, isValidMnemonic, isValidPhone } from '@/lib/account';
 import { colors, fonts } from '@/theme';
 
 /** Minuscules, un seul espace entre les mots (copier-coller, retours à la ligne…). */
@@ -23,7 +24,7 @@ export default function Restaurer() {
   const { t } = useT();
   const { profile, restore } = useWallet();
   const [words, setWords] = useState('');
-  const [name, setName] = useState(profile?.firstName ?? '');
+  const [name, setName] = useState(profile?.name ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,6 @@ export default function Restaurer() {
   const mnemonic = list.join(' ');
   const complete = list.length === 12;
   const valid = complete && isValidMnemonic(mnemonic);
-  const digits = phone.replace(/\D/g, '');
 
   const submit = async () => {
     if (!valid) {
@@ -44,8 +44,8 @@ export default function Restaurer() {
           : t('onboarding.wordsCount', { n: list.length }),
       );
     }
-    if (!name.trim()) return setError(t('common.enterFirstName'));
-    if (digits.length !== 9) return setError(t('common.phoneNineDigits'));
+    if (!isFullName(name)) return setError(t('common.enterFullName'));
+    if (!isValidPhone(phone)) return setError(t('common.phoneNineDigits'));
     if (pin.length !== 4) {
       setError(t('onboarding.chooseNewPinError'));
       return pinRef.current?.focus();
@@ -53,7 +53,7 @@ export default function Restaurer() {
     setError(null);
     setLoading(true);
     try {
-      await restore({ firstName: name.trim(), phone: digits }, pin, mnemonic);
+      await restore({ name: cleanName(name), phone }, pin, mnemonic);
       router.replace('/accueil');
     } catch (e) {
       setError(t('onboarding.restoreFailed', { error: e instanceof Error ? e.message : String(e) }));
@@ -89,25 +89,7 @@ export default function Restaurer() {
       </Card>
 
       <Card style={styles.gap16}>
-        <View style={styles.gap8}>
-          <Label>{t('common.firstName')}</Label>
-          <Input value={name} onChangeText={setName} autoCapitalize="words" placeholder={t('common.firstNamePlaceholder')} />
-        </View>
-        <View style={styles.gap8}>
-          <Label>{t('common.phone')}</Label>
-          <View style={styles.phoneRow}>
-            <View style={styles.prefix}>
-              <Text style={styles.prefixText}>+221</Text>
-            </View>
-            <Input
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="77 123 45 67"
-              style={styles.flex}
-            />
-          </View>
-        </View>
+        <ProfileFields name={name} onNameChange={setName} phone={phone} onPhoneChange={setPhone} />
       </Card>
 
       <Card fill style={styles.pinCard}>
@@ -134,15 +116,6 @@ const styles = StyleSheet.create({
   gap10: { gap: 10 },
   gap16: { gap: 16 },
   words: { minHeight: 110, flexGrow: 0 },
-  phoneRow: { flexDirection: 'row', gap: 8 },
-  prefix: {
-    height: 52,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: colors.navy,
-    justifyContent: 'center',
-  },
-  prefixText: { fontFamily: fonts.inter600, fontSize: 15, color: colors.white },
   flex: { flex: 1, minWidth: 0 },
   pinCard: { justifyContent: 'center', gap: 18 },
   note: { flexDirection: 'row', alignItems: 'center', gap: 8 },

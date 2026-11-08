@@ -66,10 +66,10 @@ export default function Profil() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const firstName = profile?.firstName ?? '';
+  const fullName = profile?.name ?? '';
   // Carte de contact : prénom, numéro et adresse, pour être ajouté à l'annuaire de l'autre sans rien écrire
   // Lien long : prénom, numéro et adresse dans le lien, il marche sans l'annuaire
-  const cardLink = address && profile ? contactCardLink({ name: firstName, phone: profile.phone, address }) : null;
+  const cardLink = address && profile ? contactCardLink({ name: fullName, phone: profile.phone, address }) : null;
   const shareCard = () => cardLink && Share.share({ message: t('profile.shareCardMessage', { link: cardLink }) });
 
   return (
@@ -83,7 +83,7 @@ export default function Profil() {
         <View style={styles.identity}>
           {/* Prénom long : la taille du texte diminue pour tenir sur une ligne */}
           <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-            {firstName}
+            {fullName}
           </Text>
           {/* Marge à droite : le bouton « Copier » est posé sur le bord bas de la carte */}
           <Text style={styles.address} numberOfLines={1}>

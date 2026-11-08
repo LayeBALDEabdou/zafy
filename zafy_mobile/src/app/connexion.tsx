@@ -8,7 +8,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useBiometricUnlock } from '@/hooks/useBiometricUnlock';
 import { useT } from '@/i18n';
-import { checkPin } from '@/lib/account';
+import { checkPin, firstNameOf } from '@/lib/account';
 import { colors, fonts } from '@/theme';
 
 /** C — Connexion (déverrouillage par code ou empreinte) */
@@ -91,7 +91,7 @@ export default function Connexion() {
     );
   }
 
-  const initial = profile?.firstName.charAt(0).toUpperCase() ?? '';
+  const initial = profile?.name.charAt(0).toUpperCase() ?? '';
 
   return (
     <Screen style={compact ? styles.screenCompact : styles.screen} header={<ScreenHeader />}>
@@ -101,7 +101,7 @@ export default function Connexion() {
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
         </View>
-        <Text style={styles.title}>{t('onboarding.welcomeBack', { name: profile?.firstName ?? '' })}</Text>
+        <Text style={styles.title}>{t('onboarding.welcomeBack', { name: profile ? firstNameOf(profile.name) : '' })}</Text>
         {/* Le message d'erreur remplace la consigne pour ne pas ajouter de ligne */}
         <Text style={error ? styles.error : styles.subtitle} accessibilityLiveRegion="polite">
           {opening ? t('onboarding.openingWallet') : (error ?? t('onboarding.enterPin'))}

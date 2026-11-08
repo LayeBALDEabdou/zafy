@@ -4,19 +4,16 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Input, Label } from '@/components/Form';
 import { Icon } from '@/components/Icon';
 import { Toggle } from '@/components/Toggle';
 import { Screen } from '@/components/Screen';
+import { ProfileFields } from '@/components/ProfileFields';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useWallet } from '@/context/WalletContext';
 import { useT } from '@/i18n';
-import type { Profile } from '@/lib/account';
+import { cleanName, isFullName, isValidPhone, type Profile } from '@/lib/account';
 import { zafyAddress } from '@/lib/phone';
 import { colors, fonts } from '@/theme';
-
-/** « 771234567 » → « 77 123 45 67 » pour l'affichage dans le champ. */
-const spaced = (digits: string) => digits.replace(/^(\d{2})(\d{3})(\d{2})(\d{2})$/, '$1 $2 $3 $4');
 
 /** Modifier son prénom et son numéro (les clés et le code ne changent pas). */
 export default function ModifierProfil() {
@@ -36,21 +33,19 @@ export default function ModifierProfil() {
 function ProfileForm({ profile }: { profile: Profile }) {
   const { t } = useT();
   const { updateProfile } = useWallet();
-  const [name, setName] = useState(profile.firstName);
-  const [phone, setPhone] = useState(spaced(profile.phone));
+  const [name, setName] = useState(profile.name);
+  const [phone, setPhone] = useState(profile.phone);
   const [discoverable, setDiscoverable] = useState(profile.discoverable !== false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const digits = phone.replace(/\D/g, '');
-
   const save = async () => {
     setError(null);
-    if (!name.trim()) return setError(t('common.enterFirstName'));
-    if (digits.length !== 9) return setError(t('common.phoneNineDigits'));
+    if (!isFullName(name)) return setError(t('common.enterFullName'));
+    if (!isValidPhone(phone)) return setError(t('common.phoneNineDigits'));
     setSaving(true);
     try {
-      await updateProfile({ firstName: name.trim(), phone: digits, discoverable });
+      await updateProfile({ name: cleanName(name), phone, discoverable });
       router.back();
     } catch (e) {
       setError(t('profile.editFailed', { error: e instanceof Error ? e.message : String(e) }));
@@ -62,31 +57,13 @@ function ProfileForm({ profile }: { profile: Profile }) {
   return (
     <Screen header={<ScreenHeader title={t('profile.editProfile')} />}>
       <Card fill style={styles.form}>
-        <View style={styles.field}>
-          <Label>{t('common.firstName')}</Label>
-          <Input value={name} onChangeText={setName} autoCapitalize="words" placeholder={t('common.firstNamePlaceholder')} />
-        </View>
-        <View style={styles.field}>
-          <Label>{t('common.phone')}</Label>
-          <View style={styles.phoneRow}>
-            <View style={styles.prefix}>
-              <Text style={styles.prefixText}>+221</Text>
-            </View>
-            <Input
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="77 123 45 67"
-              style={styles.flex}
-            />
-          </View>
-        </View>
+        <ProfileFields name={name} onNameChange={setName} phone={phone} onPhoneChange={setPhone} />
         <View style={styles.toggleRow}>
           <View style={styles.flex}>
             <Text style={styles.toggleTitle}>{t('profile.discoverable')}</Text>
             <Text style={styles.noteText}>
               {discoverable
-                ? t('profile.discoverableOn', { address: zafyAddress(digits.length === 9 ? digits : '77xxxxxxx') })
+                ? t('profile.discoverableOn', { address: zafyAddress(isValidPhone(phone) ? phone : '77xxxxxxx') })
                 : t('profile.discoverableOff')}
             </Text>
           </View>
@@ -114,15 +91,6 @@ const styles = StyleSheet.create({
   loading: { marginTop: 40 },
   form: { gap: 16 },
   field: { gap: 8 },
-  phoneRow: { flexDirection: 'row', gap: 8 },
-  prefix: {
-    height: 52,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: colors.navy,
-    justifyContent: 'center',
-  },
-  prefixText: { fontFamily: fonts.inter600, fontSize: 15, color: colors.white },
   flex: { flex: 1, minWidth: 0 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   toggleTitle: { fontFamily: fonts.inter600, fontSize: 15, color: colors.navy, marginBottom: 2 },

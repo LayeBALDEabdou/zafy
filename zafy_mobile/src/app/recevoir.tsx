@@ -33,7 +33,7 @@ export default function Recevoir() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<'request' | 'address' | null>(null);
   const sats = inputToSats(amount);
-  const firstName = profile?.firstName;
+  const fullName = profile?.name;
   // Adresse Zafy : affichée seulement si l'utilisateur est trouvable par son numéro
   const address = profile && profile.discoverable !== false ? zafyAddress(profile.phone) : null;
 
@@ -43,7 +43,7 @@ export default function Recevoir() {
     const timer = setTimeout(() => {
       setRequest(null);
       setError(null);
-      const description = firstName ? t('receive.invoiceFor', { name: firstName }) : t('receive.invoiceDefault');
+      const description = fullName ? t('receive.invoiceFor', { name: fullName }) : t('receive.invoiceDefault');
       createSparkInvoice(sats, description)
         .then((invoice) => !cancelled && setRequest(invoice))
         .catch((e) => !cancelled && setError(e instanceof Error ? e.message : String(e)));
@@ -52,7 +52,7 @@ export default function Recevoir() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [sats, firstName, t]);
+  }, [sats, fullName, t]);
 
   const copy = async (what: 'request' | 'address') => {
     const value = what === 'request' ? request : address;
@@ -71,7 +71,7 @@ export default function Recevoir() {
         amount: amountText ? `${amountText} ` : '',
         // Lien https cliquable dans WhatsApp / SMS : il ouvre Zafy sur Envoyer avec la facture
         // Lien long : il contient la facture, il marche sans l'annuaire
-        link: paymentLink({ invoice: request, name: firstName, amount: amountText || undefined }),
+        link: paymentLink({ invoice: request, name: fullName, amount: amountText || undefined }),
       }),
     });
   };

@@ -43,7 +43,7 @@ export default function Accueil() {
             onPress={() => router.navigate('/profil')}
             accessibilityLabel={t('home.profile')}
             style={styles.avatar}>
-            <Text style={styles.avatarText}>{profile?.firstName.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{profile?.name.charAt(0).toUpperCase()}</Text>
           </Pressable>
         </View>
       }>
