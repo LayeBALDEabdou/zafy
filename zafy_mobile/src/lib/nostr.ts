@@ -5,7 +5,6 @@ import { describeDestination } from '@/lib/breez';
 import { lookupPhone, phoneHash, profilesOfAuthors, profilesOfIdentity } from '@/lib/directory';
 import { isNormalizedPhone, isPhoneLike, normalizePhone } from '@/lib/phone';
 import { myPubkey, publish, query } from '@/lib/relays';
-import { colors } from '@/theme';
 
 export { normalizePhone } from '@/lib/phone';
 export { RelayError } from '@/lib/relays';
@@ -147,13 +146,6 @@ export function formatTarget(target: string) {
   if (kind === 'node') return t('report.node', { id: shorten(value) });
   if (kind === 'sparkid') return t('report.account', { id: shorten(value) });
   return shorten(value);
-}
-
-/** Couleur selon le nombre de personnes qui ont signalé. */
-export function reportTone(count: number) {
-  if (count >= 5) return { tone: 'danger', dot: colors.dangerDot } as const;
-  if (count >= 2) return { tone: 'warning', dot: colors.warning } as const;
-  return { tone: 'neutral', dot: colors.textSecondary } as const;
 }
 
 /** Texte à mettre dans le champ de saisie pour signaler à nouveau une cible. */
