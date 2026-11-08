@@ -17,7 +17,7 @@ import { QrCode } from './QrCode'
  * Lien direct vers l'APK du build EAS « preview » (8888881b, arm64) : le téléchargement démarre dès le scan du QR code.
  * À mettre à jour après chaque nouveau build preview (npx eas-cli@latest build:list).
  */
-const APK_URL = 'https://expo.dev/artifacts/eas/cGzdARxv_Wnj7EgGR6B7sI5X0j1ppxxuCRUy0CCJQm4.apk'
+const APK_URL = 'https://expo.dev/artifacts/eas/wpHjI4LUiw8nu9p4rsNu4I04hGrjk-D7Sg-YLdKbAPA.apk'
 
 // Tracés style Lucide (traits 2 px, arrondis), comme dans l'app mobile
 const ICONS = {
