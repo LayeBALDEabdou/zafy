@@ -14,10 +14,10 @@ import { isContactPage, isPayPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
 /**
- * Lien direct vers l'APK du build EAS « preview » (7e2417f2) : le téléchargement démarre dès le scan du QR code.
- * À mettre à jour après chaque nouveau build preview (npx eas-cli@latest build:list).
+ * Lien direct vers l'APK de la dernière Release GitHub : le téléchargement démarre dès le scan du QR code.
+ * Ce lien ne change pas : pour une nouvelle version, publier une Release avec un fichier nommé zafy.apk.
  */
-const APK_URL = 'https://expo.dev/artifacts/eas/T-auUGxvCCTIrkNjQVpkIROGOKMycG8HBBpV1BIK65g.apk'
+const APK_URL = 'https://github.com/LayeBALDEabdou/zafy/releases/latest/download/zafy.apk'
 
 // Tracés style Lucide (traits 2 px, arrondis), comme dans l'app mobile
 const ICONS = {
