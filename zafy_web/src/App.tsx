@@ -14,10 +14,10 @@ import { isContactPage, isPayPage, useLanguage, type Language } from './i18n'
 import { QrCode } from './QrCode'
 
 /**
- * Lien direct vers l'APK du build EAS « preview » (8888881b, arm64) : le téléchargement démarre dès le scan du QR code.
+ * Lien direct vers l'APK du build EAS « preview » (7e2417f2) : le téléchargement démarre dès le scan du QR code.
  * À mettre à jour après chaque nouveau build preview (npx eas-cli@latest build:list).
  */
-const APK_URL = 'https://expo.dev/artifacts/eas/wpHjI4LUiw8nu9p4rsNu4I04hGrjk-D7Sg-YLdKbAPA.apk'
+const APK_URL = 'https://expo.dev/artifacts/eas/T-auUGxvCCTIrkNjQVpkIROGOKMycG8HBBpV1BIK65g.apk'
 
 // Tracés style Lucide (traits 2 px, arrondis), comme dans l'app mobile
 const ICONS = {
